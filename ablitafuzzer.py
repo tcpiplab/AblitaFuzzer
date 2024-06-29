@@ -1,7 +1,7 @@
 import argparse
 from openai import OpenAI
 
-def test_abliterated_model():
+def test_call_abliterated_model():
 
     # Point to the local server
     client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
@@ -17,7 +17,6 @@ def test_abliterated_model():
         temperature=0.7,
     )
 
-    # For Jupyter notebooks we have to use `display()` instead of `print()`
     print(completion.choices[0].message.content)
 
 
@@ -26,7 +25,7 @@ def main():
     # parser.add_argument('--help', action='store_true', help='Show this help message and exit')
     parser.add_argument('--version', action='store_true', help='Show version and exit')
     parser.add_argument('--setup', action='store_true', help='Setup the fuzzer')
-    parser.add_argument('--test-abliterated-model', action='store_true', help='Test calling the abliterated model')
+    parser.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
 
     args = parser.parse_args()
 
@@ -41,10 +40,10 @@ def main():
         print('Setting up the fuzzer...')
         # Your setup code here
         exit()
-    elif args.test_abliterated_model:
+    elif args.test_call_abliterated_model:
         # Test calling the abliterated model
         print('Testing calling the abliterated model...')
-        test_abliterated_model()
+        test_call_abliterated_model()
     else:
         # Default action
         print('No action specified. Run with --help for more information.')
