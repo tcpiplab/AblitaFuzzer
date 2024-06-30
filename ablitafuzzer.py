@@ -24,6 +24,7 @@ def fuzz_target_model():
         print("Generating malicious prompts...")
 
         try:
+            # TODO remove hardcoded path
             malicious_prompts = generate_malicious_prompts(num_prompts=20, prompt_styles_config=prompt_styles_config,
                                                            csv_file='/Users/lukesheppard/Tools/AblitaFuzzer/prompt-examples/harmful-behaviors'
                                                                     '/harmful_behaviors.csv')
@@ -354,8 +355,8 @@ def print_classified_results():
 
     # Output the classified results
     for classified_result in classified_results:
-        print(f"Prompt: {classified_result['prompt']}")
-        print(f"Response: {classified_result['response']}")
+        # print(f"Prompt: {classified_result['prompt']}")
+        # print(f"Response: {classified_result['response']}")
         print(f"Classified as: {classified_result['classification']}")
         print()
 
@@ -505,7 +506,7 @@ def analyze_hate_speech():
 
 # Create a bar chart and pie chart of agreement, refusal, and confused
 # labels.
-def create_agreement_refusal_confused_charts(agreement_df, refusal_df, confused_df):
+def create_agreement_refusal_confused_charts():
     import json
     import pandas as pd
     import matplotlib.pyplot as matplot_pyplot
@@ -541,6 +542,9 @@ def main():
     parser.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
     parser.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
     parser.add_argument('--fuzz', action='store_true', help='Fuzz the target model')
+    parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
+
+    #args = parser.parse
 
     args = parser.parse_args()
 
@@ -564,6 +568,10 @@ def main():
         # Fuzz the target model
         print('Fuzzing the target model...')
         fuzz_target_model()
+    elif args.analyze_classify:
+        # Classify the results
+        #print_classified_results()
+        create_agreement_refusal_confused_charts()
     else:
         # Default action
         print('No action specified. Run with --help for more information.')
