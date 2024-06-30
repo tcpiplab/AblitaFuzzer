@@ -8,6 +8,8 @@
 AblitaFuzzer is a simple command-line tool designed to fuzz Large Language Model (LLM) chatbots that are hosted at an 
 API URL, whether in the cloud, at an on-premises URL, or even a localhost URL. 
 
+![A cartoon brain with a bandaid in the middle of its head and holding a pair of bolt cutters in one hand.](/Users/lukesheppard/Tools/AblitaFuzzer/assets/ablitafuzzer.png "Cartoon icon of AblitaFuzzer creature")
+
 ### Why AblitaFuzzer?
 
 AblitaFuzzer was specifically designed to be used by penetration testers and security researchers in real-world 
@@ -62,12 +64,9 @@ attacks were blocked. Results are stored as JSON files in the `results` director
 
 AblitaFuzzer is a proof-of-concept tool and is not intended for use against a production environment. Also, as with 
 all offensive security tools, do not point this tool at an API unless you have explicit, written permission to attack 
-that system. 
+that system.
 
-
-![A cartoon brain with a bandaid in the middle of its head and holding a pair of bolt cutters in one hand.](/Users/lukesheppard/Tools/AblitaFuzzer/assets/ablitafuzzer.png "Cartoon icon of AblitaFuzzer creature")
-
-**Features**
+## Features
 ------------
 
 * Fuzzing: AblitaFuzzer generates a large number of malicious prompts and probes the target model with them to identify potential vulnerabilities.
@@ -76,7 +75,7 @@ that system.
 * Toxicity and Hate Speech Analysis: The tool analyzes the responses for toxicity and hate speech to identify potential 
   issues like lack of output filtering guardrails in the target LLM.
 
-**Usage**
+## Usage
 ---------
 
 To use AblitaFuzzer, simply run the `ablitafuzzer.py` file and specify the desired action using command-line arguments. 
@@ -94,7 +93,7 @@ The available actions are:
 * `--print-results-csv`: Print the results to stdout in CSV format (not implemented yet).
 * `--print-results-json`: This is just like running `cat results.json` (not implemented yet).
 
-**Requirements**
+## Requirements
 --------------
 
 * Python 3.8 or later
@@ -103,12 +102,12 @@ The available actions are:
 * JSON library
 * CSV library
 
-**License**
+## License
 ---------
 
 AblitaFuzzer is licensed under the GPLv3 License. See the `LICENSE` file for details.
 
-**Acknowledgments**
+## Acknowledgments
 ----------------
 
 This very simple project was inspired by several other projects, academic researchers, and tools 
@@ -123,7 +122,7 @@ focusing on LLM security and attacks. Some of the main influences came from:
 - [PyRIT](https://github.com/Azure/PyRIT)
 - [Pentest Muse](https://github.com/AbstractEngine/pentest-muse-cli)
 
-**Contact**
+## Contact or Contribute
 ---------
 
 If you have any questions or would like to contribute to this project, please open a GitHub issue or send a pull request.
