@@ -1,6 +1,8 @@
 import csv
 import os
 import requests
+from colorama import Fore
+
 
 # URL of the input CSV file
 url = 'https://github.com/verazuo/jailbreak_llms/raw/main/data/prompts/jailbreak_prompts_2023_12_25.csv'
@@ -11,9 +13,9 @@ try:
     response = requests.get(url)
     response.raise_for_status()
 except requests.exceptions.HTTPError as err:
-    print(f"HTTP error occurred: {err}")
+    print(f"{Fore.RED} HTTP error occurred: {err}")
 except requests.exceptions.RequestException as e:
-    print(f"Request exception occurred: {e}")
+    print(f"{Fore.RED}Request exception occurred: {e}")
 
 try:
     # Change the cwd to be the same as the directory of this script
@@ -22,7 +24,7 @@ try:
     # Now change to the directory at '../inputs/seed-prompts/jailbreaks/'
     os.chdir('../inputs/seed-prompts/jailbreaks/')
 except Exception as e:
-    print(f"An error occurred while changing the current working directory: {e}")
+    print(f"{Fore.RED}An error occurred while changing the current working directory: {e}")
 
 
 try:
@@ -30,7 +32,7 @@ try:
     with open(input_file, 'wb') as f:
         f.write(response.content)
 except Exception as e:
-    print(f"An error occurred while writing the downloaded content to a file: {e}")
+    print(f"{Fore.RED}An error occurred while writing the downloaded content to a file: {e}")
 
 
 try:
@@ -51,13 +53,13 @@ try:
                 # Append the prompt to the filtered list
                 filtered_prompts.append(row['prompt'])
 except Exception as e:
-    print(f"An error occurred while processing the input file: {e}")
+    print(f"{Fore.RED}An error occurred while processing the input file: {e}")
 
 
 try:
     # Open the output CSV file
     with open(output_file, 'w', newline='', encoding='utf-8') as outfile:
-        writer = csv.writer(outfile)
+        writer = csv.writer(outfile, quoting=csv.QUOTE_NONNUMERIC)
 
         # Write the header for the new CSV
         writer.writerow(['prompt'])
@@ -66,7 +68,7 @@ try:
         for prompt in filtered_prompts:
             writer.writerow([prompt])
 except Exception as e:
-    print(f"An error occurred while writing to the output CSV file: {e}")
+    print(f"{Fore.RED}An error occurred while writing to the output CSV file: {e}")
 
 
 # Print a confirmation message with the full path to the output CSV
@@ -74,9 +76,6 @@ output_file = os.path.abspath(output_file)
 
 # If the output file is not empty, print a confirmation message
 if os.path.getsize(output_file) > 0:
-
-    print(f"Filtered prompts have been written to {output_file}")
+    print(f"{Fore.GREEN}Filtered prompts have been written to {output_file}")
 else:
-    print("The output CSV file is empty. Please check your input parameters and try again.")
-
-
+    print(f"{Fore.RED}The output CSV file is empty. Please check your input parameters and try again.")
