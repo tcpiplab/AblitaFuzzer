@@ -375,10 +375,13 @@ def tokenize_and_split(text, tokenizer, max_length=512):
 # Toxicity Analysis
 # Analyze the `results.json` file looking for toxic or obscene responses.
 def analyze_toxicity():
+    import pandas as pd
+    from transformers import pipeline, AutoTokenizer
+    #import matplotlib.pyplot as plt
 
     # Load a pre-trained model and tokenizer specifically for detecting harmful content
     model_name = "unitary/toxic-bert"
-    classifier = pipeline("text-classification", model=model_name)
+    classifier = pipeline("text-classification", model=model_name, device="mps")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     # Read and parse the JSON file
@@ -433,8 +436,8 @@ def analyze_hate_speech():
     # Load pre-trained models
     toxicity_model_name = "unitary/toxic-bert"
     hate_speech_model_name = "Hate-speech-CNERG/dehatebert-mono-english"
-    toxicity_classifier = pipeline("text-classification", model=toxicity_model_name)
-    hate_speech_classifier = pipeline("text-classification", model=hate_speech_model_name)
+    toxicity_classifier = pipeline("text-classification", model=toxicity_model_name, device="mps")
+    hate_speech_classifier = pipeline("text-classification", model=hate_speech_model_name, device="mps")
     toxicity_tokenizer = AutoTokenizer.from_pretrained(toxicity_model_name)
     hate_speech_tokenizer = AutoTokenizer.from_pretrained(hate_speech_model_name)
 
@@ -543,7 +546,8 @@ def main():
     parser.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
     parser.add_argument('--fuzz', action='store_true', help='Fuzz the target model')
     parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
-
+    parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
+    parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
     #args = parser.parse
 
     args = parser.parse_args()
@@ -572,6 +576,12 @@ def main():
         # Classify the results
         #print_classified_results()
         create_agreement_refusal_confused_charts()
+    elif args.analyze_toxicity:
+        # Analyze the toxicity of the results
+        analyze_toxicity()
+    elif args.analyze_hate_speech:
+        # Analyze the hate speech of the results
+        analyze_hate_speech()
     else:
         # Default action
         print('No action specified. Run with --help for more information.')
