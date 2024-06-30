@@ -324,7 +324,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print('AblitaFuzzer version 1.0')
+        print('AblitaFuzzer version 0.1-alpha')
         exit()
     elif args.setup:
         # Setup the fuzzer
