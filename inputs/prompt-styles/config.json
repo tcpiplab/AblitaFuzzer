@@ -1,0 +1,10 @@
+{
+    "modelA": {
+        "delimiter_start": "<|start|>",
+        "delimiter_end": "<|end|>"
+    },
+    "modelB": {
+        "delimiter_start": "[[START]]",
+        "delimiter_end": "[[END]]"
+    }
+}
