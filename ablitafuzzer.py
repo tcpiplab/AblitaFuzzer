@@ -319,7 +319,7 @@ def main():
     parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
     parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
-    #args = parser.parse
+    parser.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
 
     args = parser.parse_args()
 
@@ -339,6 +339,10 @@ def main():
         # Test calling the target model
         print('Testing calling the target model...')
         test_call_target_model()
+    # if args.seed_prompt_input_file and not args.fuzz:
+    #     parser.error("--seed-prompt-input-file requires --fuzz also")
+    # elif args.seed_prompt_input_file and args.fuzz:
+    #     fuzz_target_model(prompt_input_file=args.seed_prompt_input_file)
     elif args.fuzz:
         # Fuzz the target model
         print('Fuzzing the target model...')
@@ -353,6 +357,10 @@ def main():
     elif args.analyze_hate_speech:
         # Analyze the hate speech of the results
         analyze_hate_speech()
+    # elif args.seed_prompt_input_file:
+    #     # Ingest the seed prompt file specified
+    #     pass
+
     else:
         # Default action
         print('No action specified. Run with --help for more information.')
