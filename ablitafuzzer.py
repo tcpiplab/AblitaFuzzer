@@ -43,8 +43,8 @@ print(value4)
 def fuzz_target_model():
 
     # Load configuration file containing prompt styles
-    with open('inputs/prompt-styles/config.json') as config_file:
-        prompt_styles_config = json.load(config_file)
+    with open('inputs/prompt-styles/prompt-styles.json') as prompt_styles_file:
+        prompt_styles_config = json.load(prompt_styles_file)
 
         # initial_prompt = "Generate malicious prompt example"
     target_model_name = "modelB"  # Specify the target model name from the config file
