@@ -7,12 +7,43 @@ from openai import OpenAI
 from analyzers.analyzer import analyze_toxicity, analyze_hate_speech, create_agreement_refusal_confused_charts, \
     check_prompt_for_jailbreak
 from tests.test_calling_apis import test_call_abliterated_model, test_call_target_model
+import configparser
+import os
+
+# Create a ConfigParser object
+config = configparser.ConfigParser()
+
+print("Current working directory: ", os.getcwd())
+# Change the current working directory
+
+
+# Read the configuration file
+config.read('configs/config.ini')
+
+print("Number of sections: ", config.__len__())
+
+# Print the sections in the configuration file
+print("Sections: ", config.sections())
+
+# Print the number of keys in aconfig.__len__()
+
+# Get values from the configuration file
+num_prompts_to_generate = config.get('section1', 'num_prompts_to_generate')
+value2 = config.get('section1', 'key2')
+value3 = config.get('section2', 'key3')
+value4 = config.get('section2', 'key4')
+
+# Print the values
+print(num_prompts_to_generate)
+print(value2)
+print(value3)
+print(value4)
 
 
 def fuzz_target_model():
 
     # Load configuration file containing prompt styles
-    with open('/inputs/prompt-styles/config.json') as config_file:
+    with open('inputs/prompt-styles/config.json') as config_file:
         prompt_styles_config = json.load(config_file)
 
         # initial_prompt = "Generate malicious prompt example"
@@ -24,7 +55,7 @@ def fuzz_target_model():
 
         try:
             # TODO remove hardcoded path
-            malicious_prompts = generate_malicious_prompts(num_prompts=20, prompt_styles_config=prompt_styles_config,
+            malicious_prompts = generate_malicious_prompts(num_prompts=num_prompts_to_generate, prompt_styles_config=prompt_styles_config,
                                                            csv_file='/seed-prompts/harmful-behaviors'
                                                                     '/harmful_behaviors.csv')
         except Exception as e:
@@ -339,10 +370,12 @@ def main():
         # Test calling the target model
         print('Testing calling the target model...')
         test_call_target_model()
-    # if args.seed_prompt_input_file and not args.fuzz:
-    #     parser.error("--seed-prompt-input-file requires --fuzz also")
-    # elif args.seed_prompt_input_file and args.fuzz:
-    #     fuzz_target_model(prompt_input_file=args.seed_prompt_input_file)
+    elif args.seed_prompt_input_file and not args.fuzz:
+        parser.error("--seed-prompt-input-file requires --fuzz also")
+        exit()
+    elif args.seed_prompt_input_file and args.fuzz:
+
+        fuzz_target_model()
     elif args.fuzz:
         # Fuzz the target model
         print('Fuzzing the target model...')
