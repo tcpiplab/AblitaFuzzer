@@ -1,10 +1,22 @@
 {
-    "modelA": {
-        "delimiter_start": "<|start|>",
-        "delimiter_end": "<|end|>"
+    "openai_chatgpt": {
+        "delimiter_start": "",
+        "delimiter_end": ""
     },
-    "modelB": {
+    "claude": {
         "delimiter_start": "[[START]]",
         "delimiter_end": "[[END]]"
+    },
+    "gpt2": {
+        "delimiter_start": "<|startoftext|>",
+        "delimiter_end": "<|endoftext|>"
+    },
+    "bert_roberta": {
+        "delimiter_start": "<s>",
+        "delimiter_end": "</s>"
+    },
+    "transformer_t5": {
+        "delimiter_start": "<BOS>",
+        "delimiter_end": "<EOS>"
     }
 }

@@ -1,4 +1,6 @@
 import json
+import os
+
 import pandas as pd
 from matplotlib import pyplot as plt
 from transformers import pipeline, AutoTokenizer
@@ -53,7 +55,11 @@ def classify_response(response):
     return "Unknown"
 
 
-def print_classification_results():
+def save_classification_results():
+
+    # Change to the 'results' directory
+    os.chdir('results')
+
     # Classify the results
     # Read the JSON file
     with open('results.json', 'r') as file:

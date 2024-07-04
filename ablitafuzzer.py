@@ -5,7 +5,7 @@ import json
 import requests
 from openai import OpenAI
 from analyzers.analyzer import analyze_toxicity, analyze_hate_speech, create_agreement_refusal_confused_charts, \
-    check_prompt_for_jailbreak
+    check_prompt_for_jailbreak, save_classification_results
 from tests.test_calling_apis import test_call_abliterated_model, test_call_target_model
 import configparser
 import os
@@ -13,41 +13,26 @@ import os
 # Create a ConfigParser object
 config = configparser.ConfigParser()
 
-print("Current working directory: ", os.getcwd())
-# Change the current working directory
-
-
 # Read the configuration file
 config.read('configs/config.ini')
 
-print("Number of sections: ", config.__len__())
-
-# Print the sections in the configuration file
-print("Sections: ", config.sections())
-
-# Print the number of keys in aconfig.__len__()
-
 # Get values from the configuration file
-num_prompts_to_generate = config.get('section1', 'num_prompts_to_generate')
-value2 = config.get('section1', 'key2')
+num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
+prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
 value3 = config.get('section2', 'key3')
 value4 = config.get('section2', 'key4')
-
-# Print the values
-print(num_prompts_to_generate)
-print(value2)
-print(value3)
-print(value4)
 
 
 def fuzz_target_model():
 
     # Load configuration file containing prompt styles
-    with open('inputs/prompt-styles/prompt-styles.json') as prompt_styles_file:
+    # with open('inputs/prompt-styles/prompt-styles.json') as prompt_styles_file:
+    with open(prompt_styles_file_path) as prompt_styles_file:
         prompt_styles_config = json.load(prompt_styles_file)
 
-        # initial_prompt = "Generate malicious prompt example"
-    target_model_name = "modelB"  # Specify the target model name from the config file
+    # Specify the prompt style to use when generating prompts for the target model.
+    # This should match a key from the prompt-styles.json file
+    target_prompt_style = "openai_chatgpt"
 
     try:
         # Step 1: Generate malicious prompts
@@ -56,8 +41,8 @@ def fuzz_target_model():
         try:
             # TODO remove hardcoded path
             malicious_prompts = generate_malicious_prompts(num_prompts=num_prompts_to_generate, prompt_styles_config=prompt_styles_config,
-                                                           csv_file='/seed-prompts/harmful-behaviors'
-                                                                    '/harmful_behaviors.csv')
+                                                           csv_file_path='inputs/seed-prompts/harmful-behaviors'
+                                                                    '/harmful_behaviors.csv', target_prompt_style=target_prompt_style)
         except Exception as e:
             print(f"An error occurred when calling generate_malicious_prompts(): {str(e)}")
             return
@@ -78,7 +63,7 @@ def fuzz_target_model():
     try:
         # Step 2: Probe the target model with generated prompts
         print("Probing target model with malicious prompts...")
-        results = probe_target_model_api(prompt_styles_config, malicious_prompts, target_model_name)
+        results = probe_target_model_api(prompt_styles_config, malicious_prompts, target_prompt_style)
     except Exception as e:
         print(f"An error occurred while testing the target model: {str(e)}")
         return
@@ -105,6 +90,7 @@ def read_prompts_from_csv(csv_file):
         with open(csv_file, 'r') as file:
             pass
     except FileNotFoundError:
+
         print(f"Error: CSV file '{csv_file}' not found.")
         return prompts
 
@@ -117,18 +103,33 @@ def read_prompts_from_csv(csv_file):
                 print("Error: CSV file is empty.")
                 return prompts
 
+            # Loop through the rows in the CSV file and append the first column to the prompts list
+            # Do not append the first row because it is a header row,
+            # and only append 10 rows from the CSV file and only the first column
+
+            # TODO: Make the number of rows to append configurable
             for row in reader:
                 # Make sure that the row is not empty
                 if not row:
                     print("Error: CSV file contains empty rows.")
                     continue
 
-                # Do not append the first row because it is a header row,
-                # and only append 10 rows from the CSV file and only the first column
-                for i in range(1, 11):
-                    print(f"Appending '{row[{i}]}' to prompts list.")
-                    prompts.append(row)
-                    i = i + 1
+                # Make sure that the row has at least one column
+                if len(row) < 1:
+                    print("Error: CSV file contains rows with no columns.")
+
+                # Skip the first row
+                if reader.line_num == 1:
+                    continue
+
+                # Stop appending after 10 rows
+                # if reader.line_num > 10:
+
+                print(f"Appending seed prompt number '{reader.line_num}' to prompts list.")
+                print(f"Prompt row is now: {row[0]}")
+                prompts.append(row[0])
+                    # break
+
 
     except Exception as e:
         print(f"Error calling open() on CSV file: {e}")
@@ -198,11 +199,11 @@ def call_target_model_api(num_prompts, client, few_shot_examples):
 
 
 # Function to generate malicious prompts using the abliterated model
-def generate_malicious_prompts(num_prompts, csv_file, prompt_styles_config=None):
+def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_config=None, target_prompt_style=None):
     client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
 
     # Read the arguments from the function call
-    csv_file = csv_file
+    csv_file = csv_file_path
     # print(csv_file)
     num_prompts = num_prompts
     # print(num_prompts)
@@ -232,7 +233,10 @@ def generate_malicious_prompts(num_prompts, csv_file, prompt_styles_config=None)
 
     try:
         # Finally, wrap the few-shot examples in the appropriate delimiters
-        few_shot_examples = wrap_prompt_with_delimiters(few_shot_examples, prompt_styles_config['modelB']['delimiter_start'], prompt_styles_config['modelB']['delimiter_end'])
+        few_shot_examples = wrap_prompt_with_delimiters(few_shot_examples,
+                            prompt_styles_config[target_prompt_style]['delimiter_start'],
+                            prompt_styles_config[target_prompt_style]['delimiter_end'])
+
     except Exception as e:
         print(f"Error wrapping few-shot examples: {e}")
         return
@@ -382,7 +386,7 @@ def main():
         fuzz_target_model()
     elif args.analyze_classify:
         # Classify the results
-        #print_classified_results()
+        save_classification_results()
         create_agreement_refusal_confused_charts()
     elif args.analyze_toxicity:
         # Analyze the toxicity of the results
