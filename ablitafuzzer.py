@@ -9,6 +9,10 @@ from analyzers.analyzer import analyze_toxicity, analyze_hate_speech, create_agr
 from tests.test_calling_apis import test_call_abliterated_model, test_call_target_model
 import configparser
 import os
+from colorama import Fore, init
+
+# Initialize colorama and set autoreset to True
+init(autoreset=True)
 
 # Create a ConfigParser object
 config = configparser.ConfigParser()
@@ -36,7 +40,7 @@ def fuzz_target_model():
 
     try:
         # Step 1: Generate malicious prompts
-        print("Generating malicious prompts...")
+        print(f"{Fore.GREEN}[+] Generating malicious prompts...")
 
         try:
             # TODO remove hardcoded path
@@ -44,37 +48,37 @@ def fuzz_target_model():
                                                            csv_file_path='inputs/seed-prompts/harmful-behaviors'
                                                                     '/harmful_behaviors.csv', target_prompt_style=target_prompt_style)
         except Exception as e:
-            print(f"An error occurred when calling generate_malicious_prompts(): {str(e)}")
+            print(f"{Fore.RED}[!] An error occurred when calling generate_malicious_prompts(): {str(e)}")
             return
 
         # Check to make sure that `malicious_prompts` is not empty
         if not malicious_prompts:
-            raise Exception("No malicious prompts generated")
+            raise Exception(f"{Fore.RED}[!] No malicious prompts generated")
 
-        type(malicious_prompts)
+        # type(malicious_prompts)
 
-        print(malicious_prompts)
+        # print(malicious_prompts)
 
-        print(f"Generated {len(malicious_prompts)} malicious prompts.")
+        print(f"{Fore.GREEN}[+] Generated {len(malicious_prompts)} malicious prompts.")
     except Exception as e:
-        print(f"An error occurred while generating malicious prompts: {str(e)}")
+        print(f"{Fore.RED}[!] An error occurred while generating malicious prompts: {str(e)}")
         return
 
     try:
         # Step 2: Probe the target model with generated prompts
-        print("Probing target model with malicious prompts...")
+        print(f"{Fore.GREEN}[+] Probing target model with malicious prompts...")
         results = probe_target_model_api(prompt_styles_config, malicious_prompts, target_prompt_style)
     except Exception as e:
-        print(f"An error occurred while testing the target model: {str(e)}")
+        print(f"{Fore.RED}[!] An error occurred while testing the target model: {str(e)}")
         return
 
     try:
         # Step 3: Output results
         with open('results/results.json', 'w') as f:
             json.dump(results, f, indent=4)
-        print("Testing completed. Results saved to 'results.json'.")
+        print(f"{Fore.GREEN}[+] Testing completed. Results saved to 'results.json'.")
     except Exception as e:
-        print(f"An error occurred while outputting results: {str(e)}")
+        print(f"{Fore.RED}[!] An error occurred while outputting results: {str(e)}")
         return
 
 
@@ -91,7 +95,7 @@ def read_prompts_from_csv(csv_file):
             pass
     except FileNotFoundError:
 
-        print(f"Error: CSV file '{csv_file}' not found.")
+        print(f"{Fore.RED}[!] Error: CSV file '{csv_file}' not found.")
         return prompts
 
     try:
@@ -100,7 +104,7 @@ def read_prompts_from_csv(csv_file):
             reader = csv.reader(file)
             # Make sure that the reader object is not empty
             if reader is None:
-                print("Error: CSV file is empty.")
+                print(f"{Fore.RED}[!] Error: CSV file is empty.")
                 return prompts
 
             # Loop through the rows in the CSV file and append the first column to the prompts list
@@ -111,12 +115,12 @@ def read_prompts_from_csv(csv_file):
             for row in reader:
                 # Make sure that the row is not empty
                 if not row:
-                    print("Error: CSV file contains empty rows.")
+                    print(f"{Fore.RED}[!] Error: CSV file contains empty rows.")
                     continue
 
                 # Make sure that the row has at least one column
                 if len(row) < 1:
-                    print("Error: CSV file contains rows with no columns.")
+                    print(f"{Fore.RED}[!] Error: CSV file contains rows with no columns.")
 
                 # Skip the first row
                 if reader.line_num == 1:
@@ -125,14 +129,14 @@ def read_prompts_from_csv(csv_file):
                 # Stop appending after 10 rows
                 # if reader.line_num > 10:
 
-                print(f"Appending seed prompt number '{reader.line_num}' to prompts list.")
-                print(f"Prompt row is now: {row[0]}")
+                print(f"{Fore.GREEN}[+] Appending seed prompt number '{reader.line_num}' to prompts list.")
+                print(f"{Fore.GREEN}[+] Prompt row is now: {row[0]}")
                 prompts.append(row[0])
                     # break
 
 
     except Exception as e:
-        print(f"Error calling open() on CSV file: {e}")
+        print(f"{Fore.RED}[!] Error calling open() on CSV file: {e}")
 
     return prompts
 
@@ -179,7 +183,7 @@ def call_target_model_api(num_prompts, client, few_shot_examples):
 
     # Verify that `completion` is not empty
     if not completion or not completion.choices:
-        raise Exception("No response from abliterated LLM API")
+        raise Exception(f"{Fore.RED}[!] No response from abliterated LLM API")
 
     if completion and completion.choices:
         prompts = completion.choices[0].message.content.split('\n')
@@ -191,11 +195,11 @@ def call_target_model_api(num_prompts, client, few_shot_examples):
             check_prompt_for_jailbreak(prompt)
 
         # Print a message about the length of the list of prompts
-        print(f"Generated {len(prompts)} malicious prompts.")
+        print(f"{Fore.GREEN}[+] Generated {len(prompts)} malicious prompts.")
 
         return prompts
     else:
-        raise Exception("Error generating prompts")
+        raise Exception(f"{Fore.RED}[!] Error generating prompts")
 
 
 # Function to generate malicious prompts using the abliterated model
@@ -212,7 +216,7 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         # Read the existing malicious prompts from the CSV file
         existing_prompts = read_prompts_from_csv(csv_file)
     except Exception as e:
-        print(f"Error reading prompts from CSV: {e}")
+        print(f"{Fore.RED}[!] Error reading prompts from CSV: {e}")
         existing_prompts = []
 
     try:
@@ -220,7 +224,7 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         # First, grab the first 10 rows of "user question" and "assistant answer" pairs
         few_shot_examples = "\n".join(existing_prompts[:10])
     except Exception as e:
-        print(f"Error preparing few-shot examples: {e}")
+        print(f"{Fore.RED}[!] Error preparing few-shot examples: {e}")
         return
 
     try:
@@ -228,7 +232,7 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         for row in existing_prompts[:10]:
             few_shot_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"
     except Exception as e:
-        print(f"Error appending few-shot examples: {e}")
+        print(f"{Fore.RED}[!] Error appending few-shot examples: {e}")
         return
 
     try:
@@ -238,7 +242,7 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
                             prompt_styles_config[target_prompt_style]['delimiter_end'])
 
     except Exception as e:
-        print(f"Error wrapping few-shot examples: {e}")
+        print(f"{Fore.RED}[!] Error wrapping few-shot examples: {e}")
         return
 
     return call_target_model_api(num_prompts, client, few_shot_examples)
@@ -359,30 +363,30 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print('AblitaFuzzer version 0.1-alpha')
+        print(f'AblitaFuzzer version 0.1-alpha')
         exit()
     elif args.setup:
         # Setup the fuzzer
-        print('Setting up the fuzzer...')
+        print(f'{Fore.GREEN}[+] Setting up the fuzzer...')
         # Your setup code here
         exit()
     elif args.test_call_abliterated_model:
         # Test calling the abliterated model
-        print('Testing calling the abliterated model...')
+        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
         test_call_abliterated_model()
     elif args.test_call_target_model:
         # Test calling the target model
-        print('Testing calling the target model...')
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
         test_call_target_model()
     elif args.seed_prompt_input_file and not args.fuzz:
-        parser.error("--seed-prompt-input-file requires --fuzz also")
+        parser.error(f"{Fore.RED}[!] --seed-prompt-input-file requires --fuzz also")
         exit()
     elif args.seed_prompt_input_file and args.fuzz:
 
         fuzz_target_model()
     elif args.fuzz:
         # Fuzz the target model
-        print('Fuzzing the target model...')
+        print(f'{Fore.GREEN}[+] Fuzzing the target model...')
         fuzz_target_model()
     elif args.analyze_classify:
         # Classify the results
@@ -400,7 +404,7 @@ def main():
 
     else:
         # Default action
-        print('No action specified. Run with --help for more information.')
+        print(f'{Fore.RED}[!] No action specified. Run with --help for more information.')
 
 if __name__ == '__main__':
     main()

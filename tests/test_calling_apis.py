@@ -1,6 +1,10 @@
 import json
 import requests
 from openai import OpenAI
+from colorama import Fore, init
+
+# Initialize colorama and set autoreset to True
+init(autoreset=True)
 
 
 def test_call_abliterated_model():
@@ -50,7 +54,7 @@ def test_call_target_model():
     # Check if the request was successful
     if response.status_code == 200:
         # Print the response from the server
-        print("Response:", response.json())
+        print(f"{Fore.GREEN}[+] Response:", response.json())
     else:
         # Print the error
-        print(f"Error: {response.status_code} - {response.text}")
+        print(f"{Fore.RED}[!] Error: {response.status_code} - {response.text}")
