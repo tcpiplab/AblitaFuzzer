@@ -43,7 +43,7 @@ def fuzz_target_model():
         print(f"{Fore.GREEN}[+] Generating malicious prompts...")
 
         try:
-            # TODO remove hardcoded path
+            # TODO remove hardcoded path and move into config.ini file
             malicious_prompts = generate_malicious_prompts(num_prompts=num_prompts_to_generate, prompt_styles_config=prompt_styles_config,
                                                            csv_file_path='inputs/seed-prompts/harmful-behaviors'
                                                                     '/harmful_behaviors.csv', target_prompt_style=target_prompt_style)
@@ -104,8 +104,6 @@ def read_seed_prompts_from_csv(csv_file):
             for row in reader:
                 line_num += 1
 
-                print(f"{Fore.GREEN}B", end='')
-
                 if not row:
                     print(f"{Fore.RED}[!] Error: Seed prompts CSV file contains empty rows.")
                     continue
@@ -117,8 +115,9 @@ def read_seed_prompts_from_csv(csv_file):
                 if line_num == 1:
                     continue
 
-                print(f"{Fore.GREEN}X", end="")
                 seed_prompts.append(row[0])
+
+                # Print progress with dots
                 print(f"{Fore.GREEN}.", end="")
 
             print(f'{Fore.GREEN}\n[+] Finished creating seed prompts list.')
@@ -133,6 +132,12 @@ def read_seed_prompts_from_csv(csv_file):
     except Exception as e:
         print(f"{Fore.RED}[!] Error reading seed prompts from CSV file: {e}")
 
+    # # Print the seed prompts to the console
+    # print(f"{Fore.GREEN}\n[+] Seed prompts:")
+    # for prompt in seed_prompts:
+    #     print(prompt)
+
+    # Return the seed prompts
     return seed_prompts
 
 
@@ -209,31 +214,40 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
     # print(num_prompts)
 
     try:
-        # Read the existing malicious prompts from the CSV file
-        existing_prompts = read_seed_prompts_from_csv(csv_file)
+        # Read the malicious seed prompts from the CSV file into a list
+        list_of_seed_prompts = read_seed_prompts_from_csv(csv_file)
     except Exception as e:
-        print(f"{Fore.RED}[!] Error reading prompts from CSV: {e}")
-        existing_prompts = []
+        print(f"{Fore.RED}[!] Error reading seed prompts from CSV: {e}")
+        list_of_seed_prompts = []
 
     try:
+
+        print(f"{Fore.GREEN}[i] Preparing few-shot seed prompt examples...")
+
         # Prepare few-shot examples
-        # First, grab the first 10 rows of "user question" and "assistant answer" pairs
-        few_shot_examples = "\n".join(existing_prompts[:10])
+        # First, grab the first 100 rows of "user question" and "assistant answer" pairs
+        few_shot_seed_prompt_examples = "\n".join(list_of_seed_prompts[:100])
+
+        # TODO: Check if the few shot examples are actually including the answers or not
+
+        # # Print the few-shot examples
+        # print(f"{Fore.GREEN}[i] Few-shot examples:\n{few_shot_seed_prompt_examples}\n")  # DEBUG
+
     except Exception as e:
         print(f"{Fore.RED}[!] Error preparing few-shot examples: {e}")
         return
 
     try:
         # Then, for each row, append the user question and assistant answer as a string
-        for row in existing_prompts[:10]:
-            few_shot_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"
+        for row in list_of_seed_prompts[:10]:
+            few_shot_seed_prompt_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"
     except Exception as e:
         print(f"{Fore.RED}[!] Error appending few-shot examples: {e}")
         return
 
     try:
         # Finally, wrap the few-shot examples in the appropriate delimiters
-        few_shot_examples = wrap_prompt_with_delimiters(few_shot_examples,
+        few_shot_seed_prompt_examples = wrap_prompt_with_delimiters(few_shot_seed_prompt_examples,
                             prompt_styles_config[target_prompt_style]['delimiter_start'],
                             prompt_styles_config[target_prompt_style]['delimiter_end'])
 
@@ -241,7 +255,7 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         print(f"{Fore.RED}[!] Error wrapping few-shot examples: {e}")
         return
 
-    return call_abliterated_model_api(num_prompts, client, few_shot_examples)
+    return call_abliterated_model_api(num_prompts, client, few_shot_seed_prompt_examples)
 
 
 # Function to wrap prompts with delimiters
