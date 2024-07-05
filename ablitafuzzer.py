@@ -223,9 +223,11 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
 
     try:
 
-        print(f"{Fore.GREEN}[i] Preparing few-shot seed prompt examples...")
+        print(f"{Fore.GREEN}[+] Preparing few-shot seed prompt examples...")
 
         # Prepare few-shot examples
+
+        # TODO: Make the number of prompt/response pairs configurable (currently 100)
         # First, grab the first 100 rows of "user question" and "assistant answer" pairs
         few_shot_seed_prompt_examples = "\n".join(list_of_seed_prompts[:100])
 
@@ -239,6 +241,7 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         return
 
     try:
+        # TODO: Make the number of items configurable (currently 10)
         # Then, for each row, append the user question and assistant answer as a string
         for row in list_of_seed_prompts[:10]:
             few_shot_seed_prompt_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"
