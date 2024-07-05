@@ -10,6 +10,19 @@ API URL, whether in the cloud, at an on-premises URL, or even a localhost URL.
 
 ![A cartoon brain with a bandaid in the middle of its head and holding a pair of bolt cutters in one hand.](/Users/lukesheppard/Tools/AblitaFuzzer/assets/ablitafuzzer.png "Cartoon icon of AblitaFuzzer creature")
 
+### Running AblitaFuzzer
+
+1. Clone this repository and `cd` into the `AblitaFuzzer` directory.
+2. Set up a virtual environment (e.g. `python3 -m venv AblitaFuzzer_venv && source AblitaFuzzer_venv/bin/activate`)
+3. Install the required dependencies into your virtual environment (e.g. `pip3 install -r requirements.txt`).
+4. Host an abliterated LLM chatbot API at a localhost URL. LM Studio is a great tool for this purpose.
+5. Edit the `configs/config.ini` file to specify the URL of the target LLM chatbot API, and then run the following 
+command to start fuzzing:
+
+```bash
+python3 ablitafuzzer.py --fuzz
+```
+
 ### Why AblitaFuzzer?
 
 AblitaFuzzer was specifically designed to be used by penetration testers and security researchers in real-world 
@@ -134,6 +147,7 @@ The available actions are:
 * `--test-call-target-model`: Only test calling the target model API and exit.
 * `--fuzz`: Fuzz the target model. This is the main purpose of this tool.
 * `--analyze-classify`: Classify the results as 'Agreement', 'Refusal', 'Confused', or 'Unknown'.
+* `--analyze-with-llm`: Analyze the results by using the abliterated LLM.
 * `--analyze-toxicity`: Analyze the toxicity of the results.
 * `--analyze-hate-speech`: Analyze the hate speech of the results.
 * `--print-results`: Print the results to stdout (not implemented yet).
@@ -143,11 +157,17 @@ The available actions are:
 ## Requirements
 --------------
 
-* Python 3.8 or later
-* OpenAI library
-* Requests library
-* JSON library
-* CSV library
+* Python 3.8 or later. Ablitafuzzer was developed and tested on Python 3.11.9.
+* OpenAI library. Note: The OpenAI library is not used for calling OpenAI's API. It is used for calling the 
+  OpenAI-compatible API that you will be hosting at localhost for the abliterated LLM. Use LM Studio for that. 
+* Requests library for calling the target model's API URL that you'll be attacking.
+* JSON library.
+* CSV library for inputting seed prompts that will be used as examples when asking the abliterated model to generate 
+  new attack prompts.
+* ...and everything in `requirements.txt`
+* Ollama (optional) - This is useful if you want to test using Ablitafuzzer to attack a "remote" target LLM's API 
+  URL before pointing AblitaFuzzer at your client's LLM API. In this scenario you'd be hosting the "target LLM" at 
+  localhost. 
 
 ## License
 ---------
