@@ -60,6 +60,23 @@ AblitaFuzzer includes some simple analysis tools. But the verbose and non-determ
 you'll have to do a combination of programmatic and manual analysis to figure out which attacks succeeded and which 
 attacks were blocked. Results are stored as JSON files in the `results` directory.
 
+For now the best analysis is the LLM-based analyzer. To use it you should run these two commands, in this order:
+
+```bash
+python ablitafuzzer.py --analyze-classify
+python ablitafuzzer.py --analyze-with-llm
+```
+
+The first command will use simple keyword matching to classify the responses from the target model into categories 
+(e.g. "Agreement", "Refusal", "Confused", "Unknown", etc.). It will then strip out all the metadata and save just the 
+attack prompt, target model response, and keyword classification to a new JSON file called `results/classified_results.json`. 
+
+The second command will use your abliterated LLM to analyze the prompt/response pairs and determine if each individual 
+attack was successful or not. For now the results of this LLM-based analysis are printed to STDOUT. 
+
+You can also run other commands to perform additional analyses,
+
+
 ### Disclaimers
 
 AblitaFuzzer is a proof-of-concept tool and is not intended for use against a production environment. Also, as with 

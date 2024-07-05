@@ -4,8 +4,9 @@ import time
 import json
 import requests
 from openai import OpenAI
-from analyzers.analyzer import analyze_toxicity, analyze_hate_speech, create_agreement_refusal_confused_charts, \
+from analyzers.nlp_results_analyzer import analyze_toxicity, analyze_hate_speech, create_agreement_refusal_confused_charts, \
     check_prompt_for_jailbreak, save_classification_results
+import analyzers.llm_results_analyzer as llm_results_analyzer
 from tests.test_calling_apis import test_call_abliterated_model, test_call_target_model
 import configparser
 import os
@@ -368,6 +369,7 @@ def main():
     parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
     parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
+    parser.add_argument('--analyze-with-llm', action='store_true', help='Use the abliterated LLM to analyze the results')
     parser.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
 
     args = parser.parse_args()
@@ -392,7 +394,6 @@ def main():
         parser.error(f"{Fore.RED}[!] --seed-prompt-input-file requires --fuzz also")
         exit()
     elif args.seed_prompt_input_file and args.fuzz:
-
         fuzz_target_model()
     elif args.fuzz:
         # Fuzz the target model
@@ -408,6 +409,10 @@ def main():
     elif args.analyze_hate_speech:
         # Analyze the hate speech of the results
         analyze_hate_speech()
+    elif args.analyze_with_llm:
+        # Analyze the results with LLM
+        llm_results_analyzer.main()
+
     # elif args.seed_prompt_input_file:
     #     # Ingest the seed prompt file specified
     #     pass
