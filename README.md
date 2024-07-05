@@ -5,8 +5,8 @@
 
 ## About AblitaFuzzer
 
-AblitaFuzzer is a simple command-line tool designed to fuzz Large Language Model (LLM) chatbots that are hosted at an 
-API URL, whether in the cloud, at an on-premises URL, or even a localhost URL. 
+AblitaFuzzer is a simple command-line tool designed for blackbox LLM API fuzzing against chatbots that are hosted at a 
+URL, whether in the cloud, on-premises, or even on localhost. 
 
 ![A cartoon brain with a bandaid in the middle of its head and holding a pair of bolt cutters in one hand.](/Users/lukesheppard/Tools/AblitaFuzzer/assets/ablitafuzzer.png "Cartoon icon of AblitaFuzzer creature")
 
