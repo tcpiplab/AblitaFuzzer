@@ -86,85 +86,55 @@ def fuzz_target_model():
 # Function to read malicious prompts from CSV
 def read_seed_prompts_from_csv(csv_file):
     csv_file = csv_file
-    # print(csv_file)
     seed_prompts = []
 
-    # Make sure that the CSV file exists at the path specified in `csv_file`
     try:
-        with open(csv_file, 'r') as file:
-            pass
-    except FileNotFoundError:
-
-        print(f"{Fore.RED}[!] Error: Seed prompts CSV file '{csv_file}' not found.")
-        return seed_prompts
-
-    try:
-        print(f"{Fore.GREEN}[+] Reading seed prompts from {csv_file}...")
         with open(csv_file, 'r') as file:
             reader = csv.reader(file)
+            num_rows = sum(1 for _ in reader)
 
-            # Print the first two rows of the CSV file
-            # print(f"{Fore.YELLOW}[*] {next(reader)}")
-            # print(f"{Fore.YELLOW}[*] {next(reader)}")
+            file.seek(0)  # Reset file pointer
 
+            print(f"{Fore.GREEN}[+] Reading seed prompts from {csv_file}...")
 
-            # Make sure that the reader object is not empty
-            if reader is None:
-                print(f"{Fore.RED}[!] Error: Seed prompts CSV file is empty.")
-                exit(1)
-                # return seed_prompts
-
-            # TODO: Make the number of rows to append configurable
-
-            # Count the number of rows in the CSV file
-            num_rows = sum(1 for row in reader)
-
-            # Don't print a newline at the end of this message
             print(f"{Fore.GREEN}[+] Appending {num_rows} seed prompts to prompts list", end='')
 
-            try:
-                # Loop through the rows in the _reader object and append the first column to the prompts list
-                # Do not append the first row because it is a header row and only the first column
-                for row in reader:
-                    print(f"{Fore.GREEN}B", end='')
-                    # Make sure that the row is not empty
-                    if not row:
-                        print(f"{Fore.RED}[!] Error: Seed prompts CSV file contains empty rows.")
-                        continue
+            line_num = 0  # Track line number manually
 
-                    # Make sure that the row has at least one column
-                    if len(row) < 1:
-                        print(f"{Fore.RED}[!] Error: Seed prompts CSV file contains rows with no columns.")
+            for row in reader:
+                line_num += 1
 
-                    # Skip the first row
-                    if reader.line_num == 1:
-                        continue
+                print(f"{Fore.GREEN}B", end='')
 
-                    # print(f"{Fore.GREEN}[+] Appending seed prompt number '{reader.line_num}' to prompts list.")
-                    # print(f"{Fore.GREEN}[+] Prompt row is now: {row[0]}")
-                    print(f"{Fore.GREEN}X", end="")
-                    seed_prompts.append(row[0])
-                    print(f"{Fore.GREEN}.", end="")
+                if not row:
+                    print(f"{Fore.RED}[!] Error: Seed prompts CSV file contains empty rows.")
+                    continue
 
-            except Exception as e:
-                    print(f"{Fore.RED}[!] Error: Trying to loop through the CSV file's reader object: {e}")
+                if len(row) < 1:
+                    print(f"{Fore.RED}[!] Error: Seed prompts CSV file contains rows with no columns.")
+                    continue
+
+                if line_num == 1:
+                    continue
+
+                print(f"{Fore.GREEN}X", end="")
+                seed_prompts.append(row[0])
+                print(f"{Fore.GREEN}.", end="")
 
             print(f'{Fore.GREEN}\n[+] Finished creating seed prompts list.')
 
-            # Verify that the prompts list exists and print how long it is
             if len(seed_prompts) > 0:
                 print(f"{Fore.GREEN}[+] Seed prompts list successfully created with {len(seed_prompts)} prompts.")
             else:
                 print(f"{Fore.RED}[!] Seed prompts list is empty, please check the CSV file and try again.")
 
+    except FileNotFoundError:
+        print(f"{Fore.RED}[!] Error: Seed prompts CSV file '{csv_file}' not found.")
     except Exception as e:
-        print(f"{Fore.RED}[!] Error calling open() on seed prompts CSV file: {e}")
-
-    # Ensure the file is closed after reading
-    if not file.closed:
-        file.close()
+        print(f"{Fore.RED}[!] Error reading seed prompts from CSV file: {e}")
 
     return seed_prompts
+
 
 
 def call_abliterated_model_api(num_prompts, client, few_shot_examples):
