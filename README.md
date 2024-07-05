@@ -76,12 +76,42 @@ attack was successful or not. For now the results of this LLM-based analysis are
 
 You can also run other commands to perform additional analyses,
 
+### Best practices for using AblitaFuzzer
+
+- **Proxy everything** through Burp Suite or ZAP or another proxy tool. This will enable you to see the actual requests 
+  that are being sent to the target model's API, and allow you to modify them as needed. More importantly, this will 
+  enable you to provide the exact prompt, response, and timestamp of anything that your client (the owner of the LLM 
+  you're attacking) might ask about.
+- **Work iteratively**. Start with sending a small and diverse set of attack prompts. Analyze the successes, then 
+  gradually increase the number of attack prompts as you become more comfortable.
+- **Don't get stuck on using AblitaFuzzer**. Switch to manual attacks or a more sophisticated tool like Garak or 
+  PyRIT once you have exhausted the capabilities of AblitaFuzzer. For example, the model you're attacking might be 
+  susceptible to something like contextual manipulation, which AblitaFuzzer does not support.
+- **Don't pentest in Production** Use AblitaFuzzer in a controlled environment. This tool is not intended for use 
+  against production systems.
+- **Get permission in writing** before you ever send an attack prompt. This is a good idea in general, but especially important when using a tool like AblitaFuzzer.
+- **Read the disclaimers** below.
+
 
 ### Disclaimers
 
 AblitaFuzzer is a proof-of-concept tool and is not intended for use against a production environment. Also, as with 
 all offensive security tools, do not point this tool at an API unless you have explicit, written permission to attack 
-that system.
+that system. 
+
+Use at your own risk. Using an abliterated LLM to attack another LLM is inherently dangerous and 
+unpredictable. 
+
+This tool is intended for use in a controlled environment for research and educational purposes only.
+
+Also, it is a really good idea for you to, in writing, inform your client (the owner of the LLM you are attacking) 
+that you will be using a tool with the following intentional properties and characteristics, depending on how you 
+use and what seed-prompts you choose: 
+
+1. The ability to compose and send new and unexpected malicious prompt injections and jailbreak attempts.
+2. The ability to creatively experiment with new an unexpected ways to induce the target LLM to output toxic, 
+   offensive, biased, harmful, hateful, or otherwise ugly language. This language could show up in the attack 
+   prompts too.
 
 ## Features
 ------------
