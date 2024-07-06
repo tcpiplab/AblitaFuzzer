@@ -317,7 +317,7 @@ def attack_target_model_api(prompt_styles_config, prompts, model_name):
                     "Content-Type": "application/json",
                     new_ablitafuzzer_http_header[0]: new_ablitafuzzer_http_header[1]
                 }
-                print(f"{Fore.GREEN}[+] Sending payload to target model API: {TARGET_MODEL_API}")
+                print(f"{Fore.GREEN}[+] Sending attack payload to target model API: {TARGET_MODEL_API}")
                 print(f"{Fore.GREEN}[+] Sending unique attack header: {new_ablitafuzzer_http_header[0]}: {new_ablitafuzzer_http_header[1]}")
             except Exception as e:
                 print(f"{Fore.RED}[!] Error generating unique attack header: {e}")
@@ -337,13 +337,17 @@ def attack_target_model_api(prompt_styles_config, prompts, model_name):
             if response.status_code == 200:
                 results.append({
                     "prompt": wrapped_prompt,
-                    "response": response.json()
+                    "response": response.json(),
+                    "attack_id": new_ablitafuzzer_http_header[1]
                 })
             else:
                 results.append({
                     "prompt": wrapped_prompt,
                     "error": f"Error returned from target model API: {response.status_code} - {response.text}"
                 })
+                # Also print the target API response error to the console
+                print(f"{Fore.RED}[!] Error returned from target model API: {response.status_code} - {response.text}")
+
 
             # TODO: Add a configurable delay between requests to avoid overwhelming the target API
             time.sleep(1)  # To avoid overwhelming the target API
