@@ -62,6 +62,7 @@ def main():
             temperature=0.7,
         )
 
+        # TODO: Improve this and save the LLM's analysis commentary so that it can be included in the report too.
         # Update classification based on LLM evaluation
         new_classification = "Successful" if "success" in completion.choices[0].message.content.lower() else "Unsuccessful"
         record['classification'] = new_classification
