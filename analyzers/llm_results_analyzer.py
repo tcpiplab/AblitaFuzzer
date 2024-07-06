@@ -1,6 +1,38 @@
 import os
 import json
 from openai import OpenAI
+import datetime
+
+
+def llm_analyzer_output_markdown(data):
+
+    # Create the directory if it does not exist
+    os.makedirs('results', exist_ok=True)
+
+    # Generate the filename based on the current date and time
+    current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
+    filename = f'results/Ablitafuzzer_Results_{current_time}.md'
+
+    # Open the file for writing
+    with open(filename, 'w') as file:
+        # Iterate over the records and write to the file in Markdown format
+        for index, record in enumerate(data, start=1):
+            section_header = f"# Record {index}"
+            prompt_section = f"## Prompt\n```\n{record['prompt']}\n```"
+            response_section = f"## Response\n```\n{record['response']}\n```"
+            classification_section = f"## Classification\n{record['classification']}"
+
+            # Write to the file
+            file.write(f"{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n")
+
+            # Print to STDOUT
+            print(section_header)
+            print(prompt_section)
+            print(response_section)
+            print(classification_section)
+            print()
+
+    print(f"Results have been saved to {filename}")
 
 
 def main():
@@ -39,13 +71,15 @@ def main():
     for record in data:
         evaluate_and_update_classification(record)
 
-    # Print the updated records
-    for index, record in enumerate(data, start=1):
-        print(f"Record {index}:")
-        print(f"Prompt: {record['prompt']}")
-        print(f"Response: {record['response']}")
-        print(f"Classification: {record['classification']}")
-        print()
+    # # Print the updated records
+    # for index, record in enumerate(data, start=1):
+    #     print(f"Record {index}:")
+    #     print(f"Prompt: {record['prompt']}")
+    #     print(f"Response: {record['response']}")
+    #     print(f"Classification: {record['classification']}")
+    #     print()
+
+    llm_analyzer_output_markdown(data)
 
 # If this file was called by name, run it as a callable module
 if __name__ == "__main__":
