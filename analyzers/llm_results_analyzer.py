@@ -66,6 +66,23 @@ def main():
 
         print(f"{Fore.GREEN}[+] Sending attack prompt/response pair {counter + 1} of {num_attack_records} to LLM for evaluation.")
 
+        # TODO: Try Vicuna and other models for this "judge" role.
+        # TODO: See original paper about how they determined which model to use for the judge.
+        # https://github.com/patrickrchao/JailbreakingLLMs/tree/main
+        # https://arxiv.org/abs/2310.08419
+        # TODO: Update README.md to cite their paper and explain how this is inspired by their tool but is simpler
+        #    and only does one-shot attacks against blackbox models and does not use any cloud services.
+        #    What I borrowed from their tool is the idea of using three separate models:
+        #      1. attacker
+        #      2. target
+        #      3. judge
+        #    Probably the only new idea here is to use an abliterated model as the attacker so that it can craft
+        #    new attack prompts that have not been seen before. The intention is that these newly generated attack
+        #    prompts are based on seed prompts that are known to have been used in previous attacks.
+        #    In theory, this allows the attack prompts to hopefully not be recognized by LLMs that might have been
+        #    trained to recognize and block the very same known attack prompts that we're using for seeding.
+        #    Additional testing and experimentation is needed to determine if this approach is effective.
+        #
         # Send prompt and response to LLM for evaluation
         completion = client.chat.completions.create(
             model="failspy/Phi-3-medium-4k-instruct-abliterated-v3-GGUF",
