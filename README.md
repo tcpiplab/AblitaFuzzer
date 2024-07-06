@@ -46,7 +46,7 @@ sophisticated tool like Garak or PyRIT.
    novel malicious prompts.
 2. AblitaFuzzer sends these new malicious prompts to the target LLM.
 3. AblitaFuzzer records the responses from the target LLM.
-4. The pentester optionally calls any of AblitaFuzzer's analysis functions to help them make sense of the responses.
+4. The pentester optionally calls any of AblitaFuzzer's analysis functions to help them make sense of the responses. 
 
 #### More detailed explanation of how it works
 

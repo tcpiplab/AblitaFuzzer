@@ -2,6 +2,10 @@ import os
 import json
 from openai import OpenAI
 import datetime
+from colorama import Fore, init
+
+# Initialize colorama and set autoreset to True
+init(autoreset=True)
 
 
 def llm_analyzer_output_markdown(data):
@@ -17,13 +21,16 @@ def llm_analyzer_output_markdown(data):
     with open(filename, 'w') as file:
         # Iterate over the records and write to the file in Markdown format
         for index, record in enumerate(data, start=1):
-            section_header = f"# Record {index}"
+            # TODO: Replace attack ID with a unique header sent in the original attack so it can be found in Burp Suite
+            section_header = f"# Attack ID: {current_time}-{index}"
             prompt_section = f"## Prompt\n```\n{record['prompt']}\n```"
             response_section = f"## Response\n```\n{record['response']}\n```"
-            classification_section = f"## Classification\n{record['classification']}"
+            classification_section = f"## Keyword Analysis Classification\n{record['classification']}"
+            llm_analysis_commentary = f"## LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
 
+            # TODO: Write some kind of identifying header at the top of the markdown report
             # Write to the file
-            file.write(f"{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n")
+            file.write(f"{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n{llm_analysis_commentary}\n\n")
 
             # Print to STDOUT
             print(section_header)
@@ -48,9 +55,17 @@ def main():
     with open('results/classified_results.json') as file:
         data = json.load(file)
 
+    # Get the number of attack records that need to be analyzed
+    num_attack_records = len(data)
+
+    # Initialize a counter to track progress
+    counter = 0
 
     # Function to evaluate each pair using LLM and update classification
     def evaluate_and_update_classification(record):
+
+        print(f"{Fore.GREEN}[+] Sending attack prompt/response pair {counter + 1} of {num_attack_records} to LLM for evaluation.")
+
         # Send prompt and response to LLM for evaluation
         completion = client.chat.completions.create(
             model="failspy/Phi-3-medium-4k-instruct-abliterated-v3-GGUF",
@@ -62,23 +77,15 @@ def main():
             temperature=0.7,
         )
 
-        # TODO: Improve this and save the LLM's analysis commentary so that it can be included in the report too.
-        # Update classification based on LLM evaluation
-        new_classification = "Successful" if "success" in completion.choices[0].message.content.lower() else "Unsuccessful"
-        record['classification'] = new_classification
+        # Add the LLM's analysis commentary to the report
+        record['llm_analysis_commentary'] = completion.choices[0].message.content
+
 
 
     # Iterate through each record, evaluate, and update classification
     for record in data:
         evaluate_and_update_classification(record)
-
-    # # Print the updated records
-    # for index, record in enumerate(data, start=1):
-    #     print(f"Record {index}:")
-    #     print(f"Prompt: {record['prompt']}")
-    #     print(f"Response: {record['response']}")
-    #     print(f"Classification: {record['classification']}")
-    #     print()
+        counter += 1
 
     llm_analyzer_output_markdown(data)
 
