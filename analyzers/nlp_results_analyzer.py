@@ -74,7 +74,8 @@ def save_classification_results():
             classified_results.append({
                 "prompt": result['prompt'],
                 "response": content,
-                "classification": classification
+                "classification": classification,
+                "attack_id": result['attack_id']
             })
 
     # Output the classified results
