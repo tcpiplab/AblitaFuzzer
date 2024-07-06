@@ -8,7 +8,7 @@
 AblitaFuzzer is a simple command-line tool designed for blackbox LLM API fuzzing against chatbots that are hosted at a 
 URL, whether in the cloud, on-premises, or even on localhost. 
 
-![A cartoon brain with a bandaid in the middle of its head and holding a pair of bolt cutters in one hand.](assets/ablitafuzzer.png "Cartoon icon of AblitaFuzzer creature")
+<div style="text-align:center"><img width="33%" src="assets/ablitafuzzer.png" /></div>
 
 ### Running AblitaFuzzer
 
