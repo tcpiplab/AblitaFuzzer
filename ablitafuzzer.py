@@ -71,6 +71,14 @@ def fuzz_target_model():
         return
 
     try:
+        # Print malicious_prompts, one per line
+        print(f"{Fore.CYAN}[i] Printing malicious prompts...")
+        for prompt in malicious_prompts:
+            print(f"{Fore.CYAN}[i] Prompt: {prompt}")
+    except Exception as e:
+        print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
+
+    try:
         # Step 2: Attack the target model with generated prompts
         print(f"{Fore.GREEN}[+] Attacking target model with malicious prompts...")
         results = attack_target_model_api(prompt_styles_config, malicious_prompts, target_prompt_style)
@@ -91,7 +99,7 @@ def fuzz_target_model():
 # Function to read malicious prompts from CSV
 def read_seed_prompts_from_csv(csv_file):
     csv_file = csv_file
-    seed_prompts = []
+    seed_prompt_response_tuples = []
 
     try:
         with open(csv_file, 'r') as file:
@@ -100,9 +108,9 @@ def read_seed_prompts_from_csv(csv_file):
 
             file.seek(0)  # Reset file pointer
 
-            print(f"{Fore.GREEN}[+] Reading seed prompts from {csv_file}...")
+            print(f"{Fore.GREEN}[+] Reading seed prompts/responses from {csv_file}...")
 
-            print(f"{Fore.GREEN}[+] Appending {num_rows} seed prompts to prompts list", end='')
+            print(f"{Fore.GREEN}[+] Appending {num_rows} seed prompts/responses to seed_prompt_response_tuples list", end='')
 
             line_num = 0  # Track line number manually
 
@@ -120,30 +128,42 @@ def read_seed_prompts_from_csv(csv_file):
                 if line_num == 1:
                     continue
 
-                seed_prompts.append(row[0])
+                # TODO: Append and propagate the response also. It will require pairs of prompts and responses.
+                # Put prompt and response pairs into a tuple
+                seed_prompt_response_tuples.append((row[0], row[1]))  # First column is prompt and second column is response
+
+
+                # Append seed attack prompt to list, not the response though
+                # TODO: This is an experimental bugfix, need to add support for response propagation
+                # seed_prompt_response_tuples.append(row[0])
 
                 # Print progress with dots
                 print(f"{Fore.GREEN}.", end="")
 
-            print(f'{Fore.GREEN}\n[+] Finished creating seed prompts list.')
+            print(f'{Fore.GREEN}\n[+] Finished creating seed attack prompt/response list.')
 
-            if len(seed_prompts) > 0:
-                print(f"{Fore.GREEN}[+] Seed prompts list successfully created with {len(seed_prompts)} prompts.")
+            # Print the seed attack prompt/response list, one tuple per line
+            print(f"{Fore.CYAN}\n[i] Seed attack prompt/response list:")
+            for prompt, response in seed_prompt_response_tuples:
+                print(f"{Fore.CYAN}[i] Prompt: {prompt}\n[i] Response: {response}")
+
+            if len(seed_prompt_response_tuples) > 0:
+                print(f"{Fore.GREEN}[+] Seed attack prompt/response list successfully created with {len(seed_prompt_response_tuples)} prompts.")
             else:
-                print(f"{Fore.RED}[!] Seed prompts list is empty, please check the CSV file and try again.")
+                print(f"{Fore.RED}[!] Seed attack prompt/response list is empty, please check the CSV file and try again.")
 
     except FileNotFoundError:
-        print(f"{Fore.RED}[!] Error: Seed prompts CSV file '{csv_file}' not found.")
+        print(f"{Fore.RED}[!] Error: Seed attack prompt/response CSV file '{csv_file}' not found.")
     except Exception as e:
-        print(f"{Fore.RED}[!] Error reading seed prompts from CSV file: {e}")
+        print(f"{Fore.RED}[!] Error reading seed attack prompts/responses from CSV file: {e}")
 
     # # Print the seed prompts to the console
     # print(f"{Fore.GREEN}\n[+] Seed prompts:")
-    # for prompt in seed_prompts:
+    # for prompt in seed_prompt_response_tuples:
     #     print(prompt)
 
     # Return the seed prompts
-    return seed_prompts
+    return seed_prompt_response_tuples
 
 
 def call_abliterated_model_api(num_prompts, client, few_shot_examples):
@@ -220,8 +240,13 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
     try:
         # Read the malicious seed prompts from the CSV file into a list
         list_of_seed_prompts = read_seed_prompts_from_csv(csv_file)
+        # Print the list of seed prompts, one per line
+
+        for prompt in list_of_seed_prompts:
+            print(f"{Fore.CYAN}[i] Prompt: {prompt}")
+
     except Exception as e:
-        print(f"{Fore.RED}[!] Error reading seed prompts from CSV: {e}")
+        print(f"{Fore.RED}[!] Error reading seed attack prompts from CSV file: {e}")
         list_of_seed_prompts = []
 
     try:
@@ -244,10 +269,16 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         return
 
     try:
-        # TODO: Make the number of items configurable (currently 10)
+        # FIXME: The 'row' only contains the user question but not the assistant answer
+        # TODO: Make the number of items configurable (currently 15)
         # Then, for each row, append the user question and assistant answer as a string
-        for row in list_of_seed_prompts[:10]:
+        for row in list_of_seed_prompts[:15]:
+            # Print the row as a string
+            print(f"{Fore.GREEN}[i] Row: {row}")
             few_shot_seed_prompt_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"
+            # Print what was just appended to the string
+            print(f"{Fore.GREEN}[+] Appended few-shot example:\nUser: {row[0]}\nAssistant: {row[1]}")
+
     except Exception as e:
         print(f"{Fore.RED}[!] Error appending few-shot examples: {e}")
         return
