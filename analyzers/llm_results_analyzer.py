@@ -21,7 +21,7 @@ def llm_analyzer_output_markdown(data):
     with open(filename, 'w') as file:
         # Iterate over the records and write to the file in Markdown format
         for index, record in enumerate(data, start=1):
-            # TODO: Replace attack ID with a unique header sent in the original attack so it can be found in Burp Suite
+            # Attack ID is a unique header sent in the original attack so it can be found in Burp Suite
             section_header = f"# Attack ID: `{record['attack_id']}`"
             prompt_section = f"## Prompt\n```\n{record['prompt']}\n```"
             response_section = f"## Response\n```\n{record['response']}\n```"

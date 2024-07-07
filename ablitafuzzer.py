@@ -49,7 +49,9 @@ def fuzz_target_model():
             malicious_prompts = generate_malicious_prompts(num_prompts=num_prompts_to_generate,
                                                            prompt_styles_config=prompt_styles_config,
                                                            csv_file_path='inputs/seed-prompts/harmful-behaviors'
-                                                                         '/harmful_behaviors.csv',
+                                                                        '/harmful_behaviors.csv',
+                                                           # csv_file_path='inputs/seed-prompts/jailbreaks'
+                                                           #               '/jailbreaks_only.csv',
                                                            target_prompt_style=target_prompt_style)
         except Exception as e:
             print(f"{Fore.RED}[!] An error occurred when calling generate_malicious_prompts(): {str(e)}")
