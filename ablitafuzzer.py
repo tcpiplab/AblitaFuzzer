@@ -238,16 +238,17 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
     # print(num_prompts)
 
     try:
-        # Read the malicious seed prompts from the CSV file into a list
-        list_of_seed_prompts = read_seed_prompts_from_csv(csv_file)
-        # Print the list of seed prompts, one per line
+        # Read the malicious seed prompt/response tuples from the CSV file into a list
+        list_of_seed_prompt_response_tuples = read_seed_prompts_from_csv(csv_file)
 
-        for prompt in list_of_seed_prompts:
-            print(f"{Fore.CYAN}[i] Prompt: {prompt}")
+        # Print the list of seed prompts/responses, one per line
+        for prompt_response_tuple in list_of_seed_prompt_response_tuples:
+            print(f"{Fore.CYAN}[i] Prompt: {prompt_response_tuple[0]}")
+            print(f"{Fore.CYAN}[i] Response: {prompt_response_tuple[1]}")
 
     except Exception as e:
         print(f"{Fore.RED}[!] Error reading seed attack prompts from CSV file: {e}")
-        list_of_seed_prompts = []
+        list_of_seed_prompt_response_tuples = []
 
     try:
 
@@ -256,23 +257,17 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         # Prepare few-shot examples
 
         # TODO: Make the number of prompt/response pairs configurable (currently 100)
-        # First, grab the first 100 rows of "user question" and "assistant answer" pairs
-        few_shot_seed_prompt_examples = "\n".join(list_of_seed_prompts[:100])
-
-        # TODO: Check if the few shot examples are actually including the answers or not
-
-        # # Print the few-shot examples
-        # print(f"{Fore.GREEN}[i] Few-shot examples:\n{few_shot_seed_prompt_examples}\n")  # DEBUG
+        # First, grab the first 100 tuples of "prompt" and "response" pairs
+        few_shot_seed_prompt_examples = "\n".join(list_of_seed_prompt_response_tuples[:100][0][0])
 
     except Exception as e:
         print(f"{Fore.RED}[!] Error preparing few-shot examples: {e}")
         return
 
     try:
-        # FIXME: The 'row' only contains the user question but not the assistant answer
         # TODO: Make the number of items configurable (currently 15)
         # Then, for each row, append the user question and assistant answer as a string
-        for row in list_of_seed_prompts[:15]:
+        for row in list_of_seed_prompt_response_tuples[:15]:
             # Print the row as a string
             print(f"{Fore.GREEN}[i] Row: {row}")
             few_shot_seed_prompt_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"
