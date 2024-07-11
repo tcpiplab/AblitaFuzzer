@@ -1,5 +1,6 @@
 import argparse
 import csv
+import os
 import time
 import json
 import requests
@@ -406,8 +407,15 @@ def main():
     parser.add_argument('--analyze-with-llm', action='store_true',
                         help='Use the abliterated LLM to analyze the results')
     parser.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
+    # Add option to specify a proxy that defaults to 127.0.0.1:8080
+    parser.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
 
     args = parser.parse_args()
+
+    if args.proxy:
+        # Set the proxy
+        os.environ['HTTP_PROXY'] = f'http://{args.proxy}'
+        os.environ['HTTPS_PROXY'] = f'https://{args.proxy}'
 
     if args.version:
         print(f'AblitaFuzzer version 0.1-alpha')
