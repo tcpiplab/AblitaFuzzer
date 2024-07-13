@@ -56,6 +56,10 @@ def fuzz_target_model():
                                                            target_prompt_style=target_prompt_style)
         except Exception as e:
             print(f"{Fore.RED}[!] An error occurred when calling generate_malicious_prompts(): {str(e)}")
+            # TODO: Fix this bug
+            # [!] An error occurred when calling generate_malicious_prompts(): (MaxRetryError('HTTPSConnectionPool(host=\'huggingface.co\', port=443): Max retries exceeded with url: /jackhhao/jailbreak-classifier/resolve/main/tokenizer_config.json (Caused by ProxyError(\'Unable to connect to proxy\', ReadTimeoutError("HTTPSConnectionPool(host=\'huggingface.co\', port=443): Read timed out. (read timeout=10)")))'), '(Request ID: 5ec41ccb-3d8d-470f-8fa5-cd20acd49671)')
+
+
             return
 
         # Check to make sure that `malicious_prompts` is not empty
@@ -199,7 +203,8 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 
     completion = client.chat.completions.create(
         # model="failspy/Meta-Llama-3-8B-Instruct-abliterated-v3-GGUF",
-        model="failspy/Phi-3-medium-4k-instruct-abliterated-v3",
+        # model="failspy/Phi-3-medium-4k-instruct-abliterated-v3",
+        model="TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
@@ -216,9 +221,9 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         # Clean up the prompts
         prompts = [prompt.strip() for prompt in prompts if prompt.strip()]
 
-        # Check if each prompt is a jailbreak
-        for prompt in prompts:
-            check_prompt_for_jailbreak(prompt)
+        # # Check if each prompt is a jailbreak
+        # for prompt in prompts:
+        #     check_prompt_for_jailbreak(prompt)
 
         # Print a message about the length of the list of prompts
         print(f"{Fore.GREEN}[+] Generated {len(prompts)} malicious prompts.")
