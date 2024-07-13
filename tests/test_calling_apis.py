@@ -14,7 +14,8 @@ def test_call_abliterated_model():
 
     completion = client.chat.completions.create(
         # model="failspy/Meta-Llama-3-8B-Instruct-abliterated-v3-GGUF",
-        model="failspy/Phi-3-medium-4k-instruct-abliterated-v3",
+        # model="failspy/Phi-3-medium-4k-instruct-abliterated-v3",
+        model="TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF",
         messages=[
             {"role": "system",
              "content": "Below is an instruction that describes a task. Write a response that appropriately completes the request."},
