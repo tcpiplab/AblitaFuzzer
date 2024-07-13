@@ -19,17 +19,60 @@ from colorama import Fore, init
 # Initialize colorama and set autoreset to True
 init(autoreset=True)
 
-# Create a ConfigParser object
-config = configparser.ConfigParser()
+
+def initialize_config():
+    config_object = configparser.ConfigParser()
+    config_file_path = 'configs/config.ini'
+
+    # Check if the config file exists
+    if os.path.exists(config_file_path):
+        # Generate the backup filename with the current date and time
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        backup_file_path = f'configs/config.ini-backup-{timestamp}.ini'
+
+        # Create a backup of the existing config file
+        os.rename(config_file_path, backup_file_path)
+        print(f"Backup of the existing config file created: {backup_file_path}")
+
+    # Create a new config file with default values
+    config_object['prompts_section'] = {
+        'num_prompts_to_generate': '10',
+        'prompt_styles_file_path': 'inputs/prompt-styles/prompt-styles.json'
+    }
+    config_object['DEFAULT'] = {
+        'proxy_host_and_port': '127.0.0.1:8080',
+        'use_proxy': 'False',
+        'seed_prompt_input_file': 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv'
+    }
+
+    with open(config_file_path, 'w') as configfile:
+        config_object.write(configfile)
+    print(f"New config file created: {config_file_path}")
+
+    return config_object
+
+
+# Initialize configuration
+config = initialize_config()
 
 # Read the configuration file
 config.read('configs/config.ini')
 
-# Get values from the configuration file
-num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
-prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
-value3 = config.get('section2', 'key3')
-value4 = config.get('section2', 'key4')
+try:
+
+    print(f"{Fore.GREEN}[+] Will try to get values from the configuration file...")
+
+    # Get values from the configuration file
+    num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
+    prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
+
+except KeyError as e:
+
+    print(f"{Fore.RED}[!] Configuration key error: {e}")
+
+except Exception as e:
+
+    print(f"{Fore.RED}[!] An error occurred trying to get values from the configuration file: {e}")
 
 
 def fuzz_target_model():
@@ -401,19 +444,37 @@ def generate_unique_http_header():
 
 
 def configure(args):
-    proxy_host_and_port = args.proxy or questionary.text("Enter proxy host and port (e.g. 127.0.0.1:8080").ask()
+    proxy_host_and_port = args.proxy or questionary.text("Enter proxy host and port (e.g. 127.0.0.1:8080)").ask()
     seed_prompt_input_file = args.seed_prompt_input_file or questionary.text("Enter the seed prompt input file name (e.g. inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv):").ask()
 
     config = configparser.ConfigParser()
     config['DEFAULT'] = {
         'proxy_host_and_port': proxy_host_and_port,
+        'use_proxy': str(args.use_proxy),
         'seed_prompt_input_file': seed_prompt_input_file
+    }
+
+    config['prompts_section'] = {
+        'num_prompts_to_generate': '10',  # default value
+        'prompt_styles_file_path': 'inputs/prompt-styles/prompt-styles.json'  # default value
     }
 
     with open('configs/config.ini', 'w') as configfile:
         config.write(configfile)
 
     print("Settings saved to config.ini.")
+
+
+def load_config():
+    config = configparser.ConfigParser()
+    config.read('configs/config.ini')
+    return config['DEFAULT']
+
+def apply_proxy_settings(config):
+    if 'proxy' in config and config.getboolean('use_proxy', fallback=False):
+        os.environ['HTTP_PROXY'] = f'http://{config["proxy"]}'
+        os.environ['HTTPS_PROXY'] = f'https://{config["proxy"]}'
+        print(f"Proxy set to {config['proxy']}")
 
 
 def main():
@@ -427,19 +488,12 @@ def main():
     parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
     parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
-    parser.add_argument('--analyze-with-llm', action='store_true',
-                        help='Use the abliterated LLM to analyze the results')
-    # parser.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
-    # Add option to specify a proxy that defaults to 127.0.0.1:8080
-    # parser.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    parser.add_argument('--analyze-with-llm', action='store_true', help='Use the abliterated LLM to analyze the results')
 
-    # args = parser.parse_args()
-
-    # Subcommand: configure
     parser_configure = subparsers.add_parser('configure', help='configure user settings')
+    parser_configure.add_argument('--use-proxy', action='store_true', help='Flag to indicate if the proxy should be used')
     parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
     parser_configure.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
-
     parser_configure.set_defaults(func=configure)
 
     args = parser.parse_args()
@@ -448,20 +502,16 @@ def main():
     else:
         parser.print_help()
 
-    if args.proxy:
-        # Set the proxy
-        os.environ['HTTP_PROXY'] = f'http://{args.proxy}'
-        os.environ['HTTPS_PROXY'] = f'https://{args.proxy}'
+    config = load_config()
+    apply_proxy_settings(config)
 
     if args.version:
         print(f'AblitaFuzzer version 0.2-alpha')
         exit()
     elif args.test_call_abliterated_model:
-        # Test calling the abliterated model
         print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
         test_call_abliterated_model()
     elif args.test_call_target_model:
-        # Test calling the target model
         print(f'{Fore.GREEN}[+] Testing calling the target model...')
         test_call_target_model()
     elif args.seed_prompt_input_file and not args.fuzz:
@@ -470,31 +520,19 @@ def main():
     elif args.seed_prompt_input_file and args.fuzz:
         fuzz_target_model()
     elif args.fuzz:
-        # Fuzz the target model
         print(f'{Fore.GREEN}[+] Fuzzing the target model...')
         fuzz_target_model()
     elif args.analyze_classify:
-        # Classify the results
         save_classification_results()
         create_agreement_refusal_confused_charts()
     elif args.analyze_toxicity:
-        # Analyze the toxicity of the results
         analyze_toxicity()
     elif args.analyze_hate_speech:
-        # Analyze the hate speech of the results
         analyze_hate_speech()
     elif args.analyze_with_llm:
-        # Analyze the results with LLM
         llm_results_analyzer.main()
-
-    # elif args.seed_prompt_input_file:
-    #     # Ingest the seed prompt file specified
-    #     pass
-
     else:
-        # Default action
         print(f'{Fore.RED}[!] No action specified. Run with --help for more information.')
-
 
 if __name__ == '__main__':
     main()
