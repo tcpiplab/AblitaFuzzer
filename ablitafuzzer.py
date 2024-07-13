@@ -1,4 +1,5 @@
 import argparse
+import questionary
 import csv
 import os
 import time
@@ -18,73 +19,150 @@ from colorama import Fore, init
 # Initialize colorama and set autoreset to True
 init(autoreset=True)
 
-# Create a ConfigParser object
-config = configparser.ConfigParser()
+
+def initialize_config(create_new=False):
+    config_object = configparser.ConfigParser()
+    config_file_path = 'configs/config.ini'
+
+    if create_new or not os.path.exists(config_file_path):
+        if os.path.exists(config_file_path):
+            # Generate the backup filename with the current date and time
+            timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+            backup_file_path = f'configs/config.ini-backup-{timestamp}.ini'
+
+            # Create a backup of the existing config file
+            os.rename(config_file_path, backup_file_path)
+            print(f"{Fore.YELLOW}[*] Saving a backup of the existing config file: {backup_file_path}")
+
+        # Create a new config file with default values
+        config_object['prompts_section'] = {
+            'num_prompts_to_generate': '10',
+            'prompt_styles_file_path': 'inputs/prompt-styles/prompt-styles.json'
+        }
+        config_object['DEFAULT'] = {
+            'proxy_host_and_port': '127.0.0.1:8080',
+            'use_proxy': 'False',
+            'seed_prompt_input_file_path': 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv'
+        }
+
+        with open(config_file_path, 'w') as configfile:
+            config_object.write(configfile)
+        print(f"{Fore.GREEN}[+] New config file created: {config_file_path}")
+
+    else:
+        config_object.read(config_file_path)
+
+    return config_object
+
+
+# Initialize configuration
+config = initialize_config()
 
 # Read the configuration file
 config.read('configs/config.ini')
 
-# Get values from the configuration file
-num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
-prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
-value3 = config.get('section2', 'key3')
-value4 = config.get('section2', 'key4')
+try:
+
+    print(f"{Fore.GREEN}[+] Will try to get values from the configuration file...")
+
+    # Get values from the configuration file
+    num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
+    prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
+    seed_prompt_input_file_path = config.get('DEFAULT', 'seed_prompt_input_file_path')
+
+except KeyError as e:
+
+    print(f"{Fore.RED}[!] Configuration key error: {e}")
+
+except Exception as e:
+
+    print(f"{Fore.RED}[!] An error occurred trying to get values from the configuration file: {e}")
 
 
+# def fuzz_target_model(seed_prompt_input_file_path):
 def fuzz_target_model():
-    # Load configuration file containing prompt styles
-    # with open('inputs/prompt-styles/prompt-styles.json') as prompt_styles_file:
-    with open(prompt_styles_file_path) as prompt_styles_file:
-        prompt_styles_config = json.load(prompt_styles_file)
+    # try:
+    #     config = load_config()  # Ensure the configuration is loaded
+    #
+    # except Exception as e:
+    #
+    #     print(f"{Fore.RED}[!] An error occurred trying to load the configuration file: {e}")
+    #
+    #     return
+    #
+    # seed_prompt_input_file_path = config.get('DEFAULT', 'seed_prompt_input_file_path')
+    #
+    # prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
 
-    # Specify the prompt style to use when generating prompts for the target model.
-    # This should match a key from the prompt-styles.json file
+
+    try:
+        with open(prompt_styles_file_path) as prompt_styles_file:
+
+            prompt_styles_config = json.load(prompt_styles_file)
+
+    except FileNotFoundError:
+
+        print(f"{Fore.RED}[!] The prompt styles configuration file was not found at: {prompt_styles_file_path}")
+
+        return
+
+    except Exception as e:
+
+        print(f"{Fore.RED}[!] An error occurred when trying to load the prompt styles configuration file: {str(e)}")
+
+        return
+
+
     target_prompt_style = "openai_chatgpt"
 
     try:
-        # Step 1: Generate malicious prompts
+        with open(seed_prompt_input_file_path) as seed_prompt_input_file_handle:
+
+            seed_prompts = seed_prompt_input_file_handle.readlines()
+
+    except FileNotFoundError:
+
+        print(f"{Fore.RED}[!] The seed prompt input file was not found at: {seed_prompt_input_file_path}")
+
+        return
+
+    except Exception as e:
+
+        print(f"{Fore.RED}[!] An error occurred when trying to load the seed prompt input file: {str(e)}")
+
+        return
+
+    # Generate malicious prompts
+    try:
         print(f"{Fore.GREEN}[+] Generating malicious prompts...")
 
         try:
-            # TODO remove hardcoded path and move into config.ini file
-            malicious_prompts = generate_malicious_prompts(num_prompts=num_prompts_to_generate,
-                                                           prompt_styles_config=prompt_styles_config,
-                                                           csv_file_path='inputs/seed-prompts/harmful-behaviors'
-                                                                        '/harmful_behaviors.csv',
-                                                           # csv_file_path='inputs/seed-prompts/jailbreaks'
-                                                           #               '/jailbreaks_only.csv',
-                                                           target_prompt_style=target_prompt_style)
+            malicious_prompts = generate_malicious_prompts(
+                num_prompts=num_prompts_to_generate,
+                prompt_styles_config=prompt_styles_config,
+                csv_file_path=seed_prompt_input_file_path,
+                target_prompt_style=target_prompt_style
+            )
         except Exception as e:
             print(f"{Fore.RED}[!] An error occurred when calling generate_malicious_prompts(): {str(e)}")
-            # TODO: Fix this bug
-            # [!] An error occurred when calling generate_malicious_prompts(): (MaxRetryError('HTTPSConnectionPool(host=\'huggingface.co\', port=443): Max retries exceeded with url: /jackhhao/jailbreak-classifier/resolve/main/tokenizer_config.json (Caused by ProxyError(\'Unable to connect to proxy\', ReadTimeoutError("HTTPSConnectionPool(host=\'huggingface.co\', port=443): Read timed out. (read timeout=10)")))'), '(Request ID: 5ec41ccb-3d8d-470f-8fa5-cd20acd49671)')
-
-
             return
 
-        # Check to make sure that `malicious_prompts` is not empty
         if not malicious_prompts:
             raise Exception(f"{Fore.RED}[!] No malicious prompts generated")
-
-        # type(malicious_prompts)
-
-        # print(malicious_prompts)
 
         print(f"{Fore.GREEN}[+] Success generating {len(malicious_prompts)} malicious prompts.")
     except Exception as e:
         print(f"{Fore.RED}[!] An error occurred while generating malicious prompts: {str(e)}")
         return
 
-    try:
-        # Print malicious_prompts, one per line
-        print(f"{Fore.CYAN}[i] Printing malicious prompts...")
-        for prompt in malicious_prompts:
-            print(f"{Fore.CYAN}[i] Prompt: {prompt}")
-    except Exception as e:
-        print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
+    # try:
+    #     print(f"{Fore.CYAN}[i] Printing malicious prompts...")
+    #     for prompt in malicious_prompts:
+    #         print(f"{Fore.CYAN}[i] Prompt: {prompt}")
+    # except Exception as e:
+    #     print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
 
     try:
-        # Step 2: Attack the target model with generated prompts
         print(f"{Fore.GREEN}[+] Attacking target model with malicious prompts...")
         results = attack_target_model_api(prompt_styles_config, malicious_prompts, target_prompt_style)
     except Exception as e:
@@ -92,7 +170,6 @@ def fuzz_target_model():
         return
 
     try:
-        # Step 3: Output results
         with open('results/results.json', 'w') as f:
             json.dump(results, f, indent=4)
         print(f"{Fore.GREEN}[+] Fuzzing completed. Results saved to 'results.json'.")
@@ -102,18 +179,20 @@ def fuzz_target_model():
 
 
 # Function to read malicious prompts from CSV
-def read_seed_prompts_from_csv(csv_file):
-    csv_file = csv_file
+def read_seed_prompts_from_csv(path_to_seed_prompts_csv_file):
+    # path_to_seed_prompts_csv_file = path_to_seed_prompts_csv_file
     seed_prompt_response_tuples = []
 
+    print(f"{Fore.GREEN}[+] Will try reading seed prompts/responses from {path_to_seed_prompts_csv_file}...")
+
     try:
-        with open(csv_file, 'r') as file:
+        with open(path_to_seed_prompts_csv_file, 'r') as file:
             reader = csv.reader(file)
             num_rows = sum(1 for _ in reader)
 
             file.seek(0)  # Reset file pointer
 
-            print(f"{Fore.GREEN}[+] Reading seed prompts/responses from {csv_file}...")
+            print(f"{Fore.GREEN}[+] Reading seed prompts/responses from {path_to_seed_prompts_csv_file}...")
 
             print(f"{Fore.GREEN}[+] Appending {num_rows} seed prompts/responses to seed_prompt_response_tuples list", end='')
 
@@ -148,9 +227,9 @@ def read_seed_prompts_from_csv(csv_file):
             print(f'{Fore.GREEN}\n[+] Finished creating seed attack prompt/response list.')
 
             # Print the seed attack prompt/response list, one tuple per line
-            print(f"{Fore.CYAN}\n[i] Seed attack prompt/response list:")
-            for prompt, response in seed_prompt_response_tuples:
-                print(f"{Fore.CYAN}[i] Prompt: {prompt}\n[i] Response: {response}")
+            # print(f"{Fore.CYAN}\n[i] Seed attack prompt/response list:")
+            # for prompt, response in seed_prompt_response_tuples:
+                # print(f"{Fore.CYAN}[i] Prompt: {prompt}\n[i] Response: {response}")
 
             if len(seed_prompt_response_tuples) > 0:
                 print(f"{Fore.GREEN}[+] Seed attack prompt/response list successfully created with {len(seed_prompt_response_tuples)} prompts.")
@@ -158,7 +237,7 @@ def read_seed_prompts_from_csv(csv_file):
                 print(f"{Fore.RED}[!] Seed attack prompt/response list is empty, please check the CSV file and try again.")
 
     except FileNotFoundError:
-        print(f"{Fore.RED}[!] Error: Seed attack prompt/response CSV file '{csv_file}' not found.")
+        print(f"{Fore.RED}[!] Error: Seed attack prompt/response CSV file '{path_to_seed_prompts_csv_file}' not found.")
     except Exception as e:
         print(f"{Fore.RED}[!] Error reading seed attack prompts/responses from CSV file: {e}")
 
@@ -237,20 +316,24 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_config=None, target_prompt_style=None):
     client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
 
-    # Read the arguments from the function call
-    csv_file = csv_file_path
-    # print(csv_file)
+    # Verify that csv_file_path is a string and not a file IO object
+    if not isinstance(csv_file_path, str):
+        raise Exception(f"{Fore.RED}[!] csv_file_path argument must be a string")
+
+    # # Read the arguments from the function call
+    # path_to_seed_prompts_csv_file = csv_file_path
+    # # print(path_to_seed_prompts_csv_file)
     num_prompts = num_prompts
     # print(num_prompts)
 
     try:
         # Read the malicious seed prompt/response tuples from the CSV file into a list
-        list_of_seed_prompt_response_tuples = read_seed_prompts_from_csv(csv_file)
+        list_of_seed_prompt_response_tuples = read_seed_prompts_from_csv(csv_file_path)
 
         # Print the list of seed prompts/responses, one per line
-        for prompt_response_tuple in list_of_seed_prompt_response_tuples:
-            print(f"{Fore.CYAN}[i] Prompt: {prompt_response_tuple[0]}")
-            print(f"{Fore.CYAN}[i] Response: {prompt_response_tuple[1]}")
+        # for prompt_response_tuple in list_of_seed_prompt_response_tuples:
+        #     print(f"{Fore.CYAN}[i] Prompt: {prompt_response_tuple[0]}")
+        #     print(f"{Fore.CYAN}[i] Response: {prompt_response_tuple[1]}")
 
     except Exception as e:
         print(f"{Fore.RED}[!] Error reading seed attack prompts from CSV file: {e}")
@@ -275,10 +358,10 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         # Then, for each row, append the user question and assistant answer as a string
         for row in list_of_seed_prompt_response_tuples[:10]:
             # Print the row as a string
-            print(f"{Fore.GREEN}[i] Row: {row}")
+            # print(f"{Fore.GREEN}[+] Row: {row}")
             few_shot_seed_prompt_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"
             # Print what was just appended to the string
-            print(f"{Fore.GREEN}[+] Appended few-shot example:\nUser: {row[0]}\nAssistant: {row[1]}")
+            # print(f"{Fore.GREEN}[+] Appended few-shot example:\nUser: {row[0]}\nAssistant: {row[1]}")
 
     except Exception as e:
         print(f"{Fore.RED}[!] Error appending few-shot examples: {e}")
@@ -351,21 +434,22 @@ def attack_target_model_api(prompt_styles_config, prompts, model_name):
                     "Content-Type": "application/json",
                     new_ablitafuzzer_http_header[0]: new_ablitafuzzer_http_header[1]
                 }
-                print(f"{Fore.GREEN}[+] Sending attack payload to target model API: {TARGET_MODEL_API}")
-                print(f"{Fore.GREEN}[+] Sending unique attack header: {new_ablitafuzzer_http_header[0]}: {new_ablitafuzzer_http_header[1]}")
+
+                print(f"{Fore.GREEN}[+] Attack payload #{i + 1} unique attack header: {new_ablitafuzzer_http_header[0]}: {new_ablitafuzzer_http_header[1]}")
             except Exception as e:
                 print(f"{Fore.RED}[!] Error generating unique attack header: {e}")
                 exit(1)
 
             try:
+                print(f"{Fore.GREEN}[+] Attack payload #{i + 1} will be sent to target model API: {TARGET_MODEL_API}")
                 # Send the payload to the target API
                 response = requests.post(TARGET_MODEL_API, headers=headers, data=json.dumps(payload))
 
-                print(f"{Fore.GREEN}[+] Sent attack payload #{i + 1}. Response: {response.status_code}")
+                print(f"{Fore.GREEN}[+] Attack payload #{i + 1}. Response: {response.status_code}")
                 i += 1
 
             except Exception as e:
-                print(f"{Fore.RED}[!] Error sending payload to target model API: {e}")
+                print(f"{Fore.RED}[!] Error sending attack payload #{i + 1} to target model API: {e}")
                 exit(1)
 
             if response.status_code == 200:
@@ -384,7 +468,7 @@ def attack_target_model_api(prompt_styles_config, prompts, model_name):
 
 
             # TODO: Add a configurable delay between requests to avoid overwhelming the target API
-            time.sleep(1)  # To avoid overwhelming the target API
+            time.sleep(0.5)  # To avoid overwhelming the target API
 
     except Exception as e:
         print(f"{Fore.RED}[!] Error preparing to send payloads to target model API: {e}")
@@ -399,76 +483,120 @@ def generate_unique_http_header():
     return ablitafuzzer_http_header
 
 
+def configure(args):
+    config_file_path = 'configs/config.ini'
+    if os.path.exists(config_file_path):
+        use_existing = questionary.confirm("Do you want to use the existing configuration values?").ask()
+        if use_existing:
+            config = configparser.ConfigParser()
+            config.read(config_file_path)
+            print(f"{Fore.GREEN}[+] Using existing configuration values.")
+            return config
+        else:
+            config = initialize_config(create_new=True)
+    else:
+        config = initialize_config(create_new=True)
+
+    proxy_host_and_port = questionary.text(
+        "Enter proxy host and port (e.g. 127.0.0.1:8080):",
+        default=config['DEFAULT'].get('proxy_host_and_port', '127.0.0.1:8080')
+    ).ask()
+
+    use_proxy = questionary.confirm(
+        "Do you want to use the proxy?",
+        default=config['DEFAULT'].getboolean('use_proxy', False)
+    ).ask()
+
+    seed_prompt_input_file_path = questionary.text(
+        "Enter the seed prompt input file name (e.g. inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv):",
+        default=config['DEFAULT'].get('seed_prompt_input_file_path', 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv')
+    ).ask()
+
+    config['DEFAULT'] = {
+        'proxy_host_and_port': proxy_host_and_port,
+        'use_proxy': str(use_proxy),
+        'seed_prompt_input_file_path': seed_prompt_input_file_path
+    }
+
+    with open(config_file_path, 'w') as configfile:
+        config.write(configfile)
+
+    print(f"{Fore.GREEN}[+] Settings saved to config.ini.")
+    return config
+
+
+def load_config():
+    config = configparser.ConfigParser()
+    config.read('configs/config.ini')
+    return config['DEFAULT']
+
+def apply_proxy_settings(config):
+    if 'proxy' in config and config.getboolean('use_proxy', fallback=False):
+        os.environ['HTTP_PROXY'] = f'http://{config["proxy"]}'
+        os.environ['HTTPS_PROXY'] = f'https://{config["proxy"]}'
+        print(f"Proxy set to {config['proxy']}")
+
+
 def main():
     parser = argparse.ArgumentParser(description='AblitaFuzzer')
+    subparsers = parser.add_subparsers(title='subcommands', description='valid subcommands', help='additional help')
+
     parser.add_argument('--version', action='store_true', help='Show version and exit')
-    parser.add_argument('--setup', action='store_true', help='Setup the fuzzer')
     parser.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
     parser.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
     parser.add_argument('--fuzz', action='store_true', help='Fuzz the target model')
     parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
     parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
-    parser.add_argument('--analyze-with-llm', action='store_true',
-                        help='Use the abliterated LLM to analyze the results')
-    parser.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
-    # Add option to specify a proxy that defaults to 127.0.0.1:8080
-    parser.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    parser.add_argument('--analyze-with-llm', action='store_true', help='Use the abliterated LLM to analyze the results')
+
+    parser_configure = subparsers.add_parser('configure', help='configure user settings')
+    parser_configure.add_argument('--use-proxy', action='store_true', help='Flag to indicate if the proxy should be used')
+    parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    parser_configure.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
+    parser_configure.set_defaults(func=configure)
 
     args = parser.parse_args()
+    if hasattr(args, 'func'):
+        args.func(args)
+    else:
+        parser.print_help()
 
-    if args.proxy:
-        # Set the proxy
-        os.environ['HTTP_PROXY'] = f'http://{args.proxy}'
-        os.environ['HTTPS_PROXY'] = f'https://{args.proxy}'
+    config = load_config()
+    apply_proxy_settings(config)
 
     if args.version:
-        print(f'AblitaFuzzer version 0.1-alpha')
-        exit()
-    elif args.setup:
-        # Setup the fuzzer
-        print(f'{Fore.GREEN}[+] Setting up the fuzzer...')
-        # Your setup code here
+        print(f'AblitaFuzzer version 0.2-alpha')
         exit()
     elif args.test_call_abliterated_model:
-        # Test calling the abliterated model
         print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
         test_call_abliterated_model()
     elif args.test_call_target_model:
-        # Test calling the target model
         print(f'{Fore.GREEN}[+] Testing calling the target model...')
         test_call_target_model()
-    elif args.seed_prompt_input_file and not args.fuzz:
-        parser.error(f"{Fore.RED}[!] --seed-prompt-input-file requires --fuzz also")
-        exit()
-    elif args.seed_prompt_input_file and args.fuzz:
-        fuzz_target_model()
     elif args.fuzz:
-        # Fuzz the target model
-        print(f'{Fore.GREEN}[+] Fuzzing the target model...')
+        # Use prompt_styles_file_path from config if not provided via command line
+        prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
+        if not prompt_styles_file_path:
+            print(f"{Fore.RED}[!] prompt_styles_file_path must be specified in config or as an argument.")
+            exit(1)
+        seed_prompt_input_file_path = config.get('prompts_section', 'seed_prompt_input_file_path')
+        if not seed_prompt_input_file_path:
+            print(f"{Fore.RED}[!] seed_prompt_input_file_path must be specified in config or as an argument.")
+            exit(1)
+
         fuzz_target_model()
     elif args.analyze_classify:
-        # Classify the results
         save_classification_results()
         create_agreement_refusal_confused_charts()
     elif args.analyze_toxicity:
-        # Analyze the toxicity of the results
         analyze_toxicity()
     elif args.analyze_hate_speech:
-        # Analyze the hate speech of the results
         analyze_hate_speech()
     elif args.analyze_with_llm:
-        # Analyze the results with LLM
         llm_results_analyzer.main()
-
-    # elif args.seed_prompt_input_file:
-    #     # Ingest the seed prompt file specified
-    #     pass
-
     else:
-        # Default action
         print(f'{Fore.RED}[!] No action specified. Run with --help for more information.')
-
 
 if __name__ == '__main__':
     main()
