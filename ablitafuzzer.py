@@ -358,10 +358,10 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         # Then, for each row, append the user question and assistant answer as a string
         for row in list_of_seed_prompt_response_tuples[:10]:
             # Print the row as a string
-            print(f"{Fore.GREEN}[i] Row: {row}")
+            # print(f"{Fore.GREEN}[+] Row: {row}")
             few_shot_seed_prompt_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"
             # Print what was just appended to the string
-            print(f"{Fore.GREEN}[+] Appended few-shot example:\nUser: {row[0]}\nAssistant: {row[1]}")
+            # print(f"{Fore.GREEN}[+] Appended few-shot example:\nUser: {row[0]}\nAssistant: {row[1]}")
 
     except Exception as e:
         print(f"{Fore.RED}[!] Error appending few-shot examples: {e}")
@@ -434,21 +434,22 @@ def attack_target_model_api(prompt_styles_config, prompts, model_name):
                     "Content-Type": "application/json",
                     new_ablitafuzzer_http_header[0]: new_ablitafuzzer_http_header[1]
                 }
-                print(f"{Fore.GREEN}[+] Sending attack payload to target model API: {TARGET_MODEL_API}")
-                print(f"{Fore.GREEN}[+] Sending unique attack header: {new_ablitafuzzer_http_header[0]}: {new_ablitafuzzer_http_header[1]}")
+
+                print(f"{Fore.GREEN}[+] Attack payload #{i + 1} unique attack header: {new_ablitafuzzer_http_header[0]}: {new_ablitafuzzer_http_header[1]}")
             except Exception as e:
                 print(f"{Fore.RED}[!] Error generating unique attack header: {e}")
                 exit(1)
 
             try:
+                print(f"{Fore.GREEN}[+] Attack payload #{i + 1} will be sent to target model API: {TARGET_MODEL_API}")
                 # Send the payload to the target API
                 response = requests.post(TARGET_MODEL_API, headers=headers, data=json.dumps(payload))
 
-                print(f"{Fore.GREEN}[+] Sent attack payload #{i + 1}. Response: {response.status_code}")
+                print(f"{Fore.GREEN}[+] Attack payload #{i + 1}. Response: {response.status_code}")
                 i += 1
 
             except Exception as e:
-                print(f"{Fore.RED}[!] Error sending payload to target model API: {e}")
+                print(f"{Fore.RED}[!] Error sending attack payload #{i + 1} to target model API: {e}")
                 exit(1)
 
             if response.status_code == 200:
@@ -467,7 +468,7 @@ def attack_target_model_api(prompt_styles_config, prompts, model_name):
 
 
             # TODO: Add a configurable delay between requests to avoid overwhelming the target API
-            time.sleep(1)  # To avoid overwhelming the target API
+            time.sleep(0.5)  # To avoid overwhelming the target API
 
     except Exception as e:
         print(f"{Fore.RED}[!] Error preparing to send payloads to target model API: {e}")
