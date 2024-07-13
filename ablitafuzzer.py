@@ -20,34 +20,37 @@ from colorama import Fore, init
 init(autoreset=True)
 
 
-def initialize_config():
+def initialize_config(create_new=False):
     config_object = configparser.ConfigParser()
     config_file_path = 'configs/config.ini'
 
-    # Check if the config file exists
-    if os.path.exists(config_file_path):
-        # Generate the backup filename with the current date and time
-        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        backup_file_path = f'configs/config.ini-backup-{timestamp}.ini'
+    if create_new or not os.path.exists(config_file_path):
+        if os.path.exists(config_file_path):
+            # Generate the backup filename with the current date and time
+            timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+            backup_file_path = f'configs/config.ini-backup-{timestamp}.ini'
 
-        # Create a backup of the existing config file
-        os.rename(config_file_path, backup_file_path)
-        print(f"Backup of the existing config file created: {backup_file_path}")
+            # Create a backup of the existing config file
+            os.rename(config_file_path, backup_file_path)
+            print(f"{Fore.YELLOW}[*] Saving a backup of the existing config file: {backup_file_path}")
 
-    # Create a new config file with default values
-    config_object['prompts_section'] = {
-        'num_prompts_to_generate': '10',
-        'prompt_styles_file_path': 'inputs/prompt-styles/prompt-styles.json'
-    }
-    config_object['DEFAULT'] = {
-        'proxy_host_and_port': '127.0.0.1:8080',
-        'use_proxy': 'False',
-        'seed_prompt_input_file': 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv'
-    }
+        # Create a new config file with default values
+        config_object['prompts_section'] = {
+            'num_prompts_to_generate': '10',
+            'prompt_styles_file_path': 'inputs/prompt-styles/prompt-styles.json'
+        }
+        config_object['DEFAULT'] = {
+            'proxy_host_and_port': '127.0.0.1:8080',
+            'use_proxy': 'False',
+            'seed_prompt_input_file': 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv'
+        }
 
-    with open(config_file_path, 'w') as configfile:
-        config_object.write(configfile)
-    print(f"New config file created: {config_file_path}")
+        with open(config_file_path, 'w') as configfile:
+            config_object.write(configfile)
+        print(f"{Fore.GREEN}[+] New config file created: {config_file_path}")
+
+    else:
+        config_object.read(config_file_path)
 
     return config_object
 
@@ -444,25 +447,45 @@ def generate_unique_http_header():
 
 
 def configure(args):
-    proxy_host_and_port = args.proxy or questionary.text("Enter proxy host and port (e.g. 127.0.0.1:8080)").ask()
-    seed_prompt_input_file = args.seed_prompt_input_file or questionary.text("Enter the seed prompt input file name (e.g. inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv):").ask()
+    config_file_path = 'configs/config.ini'
+    if os.path.exists(config_file_path):
+        use_existing = questionary.confirm("Do you want to use the existing configuration values?").ask()
+        if use_existing:
+            config = configparser.ConfigParser()
+            config.read(config_file_path)
+            print(f"{Fore.GREEN}[+] Using existing configuration values.")
+            return config
+        else:
+            config = initialize_config(create_new=True)
+    else:
+        config = initialize_config(create_new=True)
 
-    config = configparser.ConfigParser()
+    proxy_host_and_port = questionary.text(
+        "Enter proxy host and port (e.g. 127.0.0.1:8080):",
+        default=config['DEFAULT'].get('proxy_host_and_port', '127.0.0.1:8080')
+    ).ask()
+
+    use_proxy = questionary.confirm(
+        "Do you want to use the proxy?",
+        default=config['DEFAULT'].getboolean('use_proxy', False)
+    ).ask()
+
+    seed_prompt_input_file = questionary.text(
+        "Enter the seed prompt input file name (e.g. inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv):",
+        default=config['DEFAULT'].get('seed_prompt_input_file', 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv')
+    ).ask()
+
     config['DEFAULT'] = {
         'proxy_host_and_port': proxy_host_and_port,
-        'use_proxy': str(args.use_proxy),
+        'use_proxy': str(use_proxy),
         'seed_prompt_input_file': seed_prompt_input_file
     }
 
-    config['prompts_section'] = {
-        'num_prompts_to_generate': '10',  # default value
-        'prompt_styles_file_path': 'inputs/prompt-styles/prompt-styles.json'  # default value
-    }
-
-    with open('configs/config.ini', 'w') as configfile:
+    with open(config_file_path, 'w') as configfile:
         config.write(configfile)
 
-    print("Settings saved to config.ini.")
+    print(f"{Fore.GREEN}[+] Settings saved to config.ini.")
+    return config
 
 
 def load_config():
