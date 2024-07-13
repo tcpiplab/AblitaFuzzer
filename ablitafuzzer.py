@@ -1,4 +1,5 @@
 import argparse
+import questionary
 import csv
 import os
 import time
@@ -399,10 +400,27 @@ def generate_unique_http_header():
     return ablitafuzzer_http_header
 
 
+def configure(args):
+    proxy_host_and_port = args.proxy or questionary.text("Enter proxy host and port (e.g. 127.0.0.1:8080").ask()
+    seed_prompt_input_file = args.seed_prompt_input_file or questionary.text("Enter the seed prompt input file name (e.g. inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv):").ask()
+
+    config = configparser.ConfigParser()
+    config['DEFAULT'] = {
+        'proxy_host_and_port': proxy_host_and_port,
+        'seed_prompt_input_file': seed_prompt_input_file
+    }
+
+    with open('configs/config.ini', 'w') as configfile:
+        config.write(configfile)
+
+    print("Settings saved to config.ini.")
+
+
 def main():
     parser = argparse.ArgumentParser(description='AblitaFuzzer')
+    subparsers = parser.add_subparsers(title='subcommands', description='valid subcommands', help='additional help')
+
     parser.add_argument('--version', action='store_true', help='Show version and exit')
-    parser.add_argument('--setup', action='store_true', help='Setup the fuzzer')
     parser.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
     parser.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
     parser.add_argument('--fuzz', action='store_true', help='Fuzz the target model')
@@ -411,11 +429,24 @@ def main():
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
     parser.add_argument('--analyze-with-llm', action='store_true',
                         help='Use the abliterated LLM to analyze the results')
-    parser.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
+    # parser.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
     # Add option to specify a proxy that defaults to 127.0.0.1:8080
-    parser.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    # parser.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+
+    # args = parser.parse_args()
+
+    # Subcommand: configure
+    parser_configure = subparsers.add_parser('configure', help='configure user settings')
+    parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    parser_configure.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
+
+    parser_configure.set_defaults(func=configure)
 
     args = parser.parse_args()
+    if hasattr(args, 'func'):
+        args.func(args)
+    else:
+        parser.print_help()
 
     if args.proxy:
         # Set the proxy
@@ -423,12 +454,7 @@ def main():
         os.environ['HTTPS_PROXY'] = f'https://{args.proxy}'
 
     if args.version:
-        print(f'AblitaFuzzer version 0.1-alpha')
-        exit()
-    elif args.setup:
-        # Setup the fuzzer
-        print(f'{Fore.GREEN}[+] Setting up the fuzzer...')
-        # Your setup code here
+        print(f'AblitaFuzzer version 0.2-alpha')
         exit()
     elif args.test_call_abliterated_model:
         # Test calling the abliterated model
