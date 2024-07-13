@@ -155,12 +155,12 @@ def fuzz_target_model():
         print(f"{Fore.RED}[!] An error occurred while generating malicious prompts: {str(e)}")
         return
 
-    try:
-        print(f"{Fore.CYAN}[i] Printing malicious prompts...")
-        for prompt in malicious_prompts:
-            print(f"{Fore.CYAN}[i] Prompt: {prompt}")
-    except Exception as e:
-        print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
+    # try:
+    #     print(f"{Fore.CYAN}[i] Printing malicious prompts...")
+    #     for prompt in malicious_prompts:
+    #         print(f"{Fore.CYAN}[i] Prompt: {prompt}")
+    # except Exception as e:
+    #     print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
 
     try:
         print(f"{Fore.GREEN}[+] Attacking target model with malicious prompts...")
@@ -227,9 +227,9 @@ def read_seed_prompts_from_csv(path_to_seed_prompts_csv_file):
             print(f'{Fore.GREEN}\n[+] Finished creating seed attack prompt/response list.')
 
             # Print the seed attack prompt/response list, one tuple per line
-            print(f"{Fore.CYAN}\n[i] Seed attack prompt/response list:")
+            # print(f"{Fore.CYAN}\n[i] Seed attack prompt/response list:")
             for prompt, response in seed_prompt_response_tuples:
-                print(f"{Fore.CYAN}[i] Prompt: {prompt}\n[i] Response: {response}")
+                # print(f"{Fore.CYAN}[i] Prompt: {prompt}\n[i] Response: {response}")
 
             if len(seed_prompt_response_tuples) > 0:
                 print(f"{Fore.GREEN}[+] Seed attack prompt/response list successfully created with {len(seed_prompt_response_tuples)} prompts.")
@@ -331,9 +331,9 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         list_of_seed_prompt_response_tuples = read_seed_prompts_from_csv(csv_file_path)
 
         # Print the list of seed prompts/responses, one per line
-        for prompt_response_tuple in list_of_seed_prompt_response_tuples:
-            print(f"{Fore.CYAN}[i] Prompt: {prompt_response_tuple[0]}")
-            print(f"{Fore.CYAN}[i] Response: {prompt_response_tuple[1]}")
+        # for prompt_response_tuple in list_of_seed_prompt_response_tuples:
+        #     print(f"{Fore.CYAN}[i] Prompt: {prompt_response_tuple[0]}")
+        #     print(f"{Fore.CYAN}[i] Response: {prompt_response_tuple[1]}")
 
     except Exception as e:
         print(f"{Fore.RED}[!] Error reading seed attack prompts from CSV file: {e}")
