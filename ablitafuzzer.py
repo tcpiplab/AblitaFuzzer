@@ -228,7 +228,7 @@ def read_seed_prompts_from_csv(path_to_seed_prompts_csv_file):
 
             # Print the seed attack prompt/response list, one tuple per line
             # print(f"{Fore.CYAN}\n[i] Seed attack prompt/response list:")
-            for prompt, response in seed_prompt_response_tuples:
+            # for prompt, response in seed_prompt_response_tuples:
                 # print(f"{Fore.CYAN}[i] Prompt: {prompt}\n[i] Response: {response}")
 
             if len(seed_prompt_response_tuples) > 0:
