@@ -271,9 +271,9 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
         return
 
     try:
-        # TODO: Make the number of items configurable (currently 15)
+        # TODO: Make the number of items configurable (currently 10)
         # Then, for each row, append the user question and assistant answer as a string
-        for row in list_of_seed_prompt_response_tuples[:15]:
+        for row in list_of_seed_prompt_response_tuples[:10]:
             # Print the row as a string
             print(f"{Fore.GREEN}[i] Row: {row}")
             few_shot_seed_prompt_examples += f"\nUser: {row[0]}\nAssistant: {row[1]}"

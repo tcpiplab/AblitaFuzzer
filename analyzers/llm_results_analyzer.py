@@ -28,7 +28,8 @@ def llm_analyzer_output_markdown(data):
             classification_section = f"## Keyword Analysis Classification\n{record['classification']}"
             llm_analysis_commentary = f"## LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
 
-            # TODO: Write some kind of identifying header at the top of the markdown report
+            # TODO: Write some kind of identifying header at the top of the markdown report to specify the following:
+            # date, time, target URL, attacker model, judge model, full command, seed attack filename, etc.
             # Write to the file
             file.write(f"{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n{llm_analysis_commentary}\n\n")
 
@@ -68,8 +69,7 @@ def main():
 
         print(f"{Fore.GREEN}[+] Sending attack prompt/response pair {counter + 1} of {num_attack_records} to LLM for evaluation.")
 
-        # TODO: Try Vicuna and other models for this "judge" role.
-        # TODO: See original paper about how they determined which model to use for the judge.
+
         # https://github.com/patrickrchao/JailbreakingLLMs/tree/main
         # https://arxiv.org/abs/2310.08419
         # TODO: Update README.md to cite their paper and explain how this is inspired by their tool but is simpler
