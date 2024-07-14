@@ -257,6 +257,8 @@ def create_agreement_refusal_confused_charts():
 
 
 def check_prompt_for_jailbreak(prompt):
+    # TODO: Probably remove this unused function, especially since we are not currently able to test jailbreak seed prompts
+    # TODO: Move these to the top of the file if we keep this function
     from transformers import AutoTokenizer, AutoModelForSequenceClassification
     import torch
 

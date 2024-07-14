@@ -6,8 +6,6 @@ import time
 import json
 import requests
 from openai import OpenAI
-from pygments.lexer import default
-
 from analyzers.nlp_results_analyzer import analyze_toxicity, analyze_hate_speech, \
     create_agreement_refusal_confused_charts, \
     check_prompt_for_jailbreak, save_classification_results
@@ -18,6 +16,7 @@ import uuid
 from datetime import datetime
 from colorama import Fore, init
 
+# TODO: Move this to main() and test if it still works correctly
 # Initialize colorama and set autoreset to True
 init(autoreset=True)
 
@@ -57,45 +56,33 @@ def initialize_config(create_new=False):
     return config_object
 
 
-# Initialize configuration
-config = initialize_config()
+def initialize_and_read_config():
+    global num_prompts_to_generate, prompt_styles_file_path, seed_prompt_input_file_path
+    # Initialize configuration
+    config = initialize_config()
+    # Read the configuration file
+    config.read('configs/config.ini')
+    try:
 
-# Read the configuration file
-config.read('configs/config.ini')
+        print(f"{Fore.GREEN}[+] Will try to get values from the configuration file...")
 
-try:
+        # Get values from the configuration file
+        num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
+        prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
+        seed_prompt_input_file_path = config.get('DEFAULT', 'seed_prompt_input_file_path')
 
-    print(f"{Fore.GREEN}[+] Will try to get values from the configuration file...")
+    except KeyError as e:
 
-    # Get values from the configuration file
-    num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
-    prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
-    seed_prompt_input_file_path = config.get('DEFAULT', 'seed_prompt_input_file_path')
+        print(f"{Fore.RED}[!] Configuration key error: {e}")
 
-except KeyError as e:
+    except Exception as e:
 
-    print(f"{Fore.RED}[!] Configuration key error: {e}")
+        print(f"{Fore.RED}[!] An error occurred trying to get values from the configuration file: {e}")
 
-except Exception as e:
-
-    print(f"{Fore.RED}[!] An error occurred trying to get values from the configuration file: {e}")
 
 
 # def fuzz_target_model(seed_prompt_input_file_path):
 def fuzz_target_model():
-    # try:
-    #     config = load_config()  # Ensure the configuration is loaded
-    #
-    # except Exception as e:
-    #
-    #     print(f"{Fore.RED}[!] An error occurred trying to load the configuration file: {e}")
-    #
-    #     return
-    #
-    # seed_prompt_input_file_path = config.get('DEFAULT', 'seed_prompt_input_file_path')
-    #
-    # prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
-
 
     try:
         with open(prompt_styles_file_path) as prompt_styles_file:
@@ -322,11 +309,7 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
     if not isinstance(csv_file_path, str):
         raise Exception(f"{Fore.RED}[!] csv_file_path argument must be a string")
 
-    # # Read the arguments from the function call
-    # path_to_seed_prompts_csv_file = csv_file_path
-    # # print(path_to_seed_prompts_csv_file)
     num_prompts = num_prompts
-    # print(num_prompts)
 
     try:
         # Read the malicious seed prompt/response tuples from the CSV file into a list
@@ -388,7 +371,7 @@ def generate_malicious_prompts(num_prompts, csv_file_path=None, prompt_styles_co
 def wrap_prompt_with_delimiters(prompt, delimiter_start, delimiter_end):
     return f"{delimiter_start}{prompt}{delimiter_end}"
 
-
+# TODO: Move this into main or into one of the (unfortunately many) config functions
 # Define the URL for the target model API
 TARGET_MODEL_API = "http://localhost:11434/api/chat"
 
@@ -548,6 +531,7 @@ def load_config():
     config.read('configs/config.ini')
     return config['DEFAULT']
 
+
 def apply_proxy_settings(config):
     if 'proxy' in config and config.getboolean('use_proxy', fallback=False):
         os.environ['HTTP_PROXY'] = f'http://{config["proxy"]}'
@@ -556,9 +540,13 @@ def apply_proxy_settings(config):
 
 
 def main():
+    # Instantiate an argument parser object
     parser = argparse.ArgumentParser(description='AblitaFuzzer')
+
+    # Create a subparser so we can have subcommands
     subparsers = parser.add_subparsers(title='subcommands', description='valid subcommands', help='additional help')
 
+    # Common options when running this tool
     parser.add_argument('--version', action='store_true', help='Show version and exit')
     parser.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
     parser.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
@@ -568,57 +556,89 @@ def main():
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
     parser.add_argument('--analyze-with-llm', action='store_true', help='Use the abliterated LLM to analyze the results')
 
+    # Add the 'configure' sub-command
     parser_configure = subparsers.add_parser('configure', help='configure user settings')
     parser_configure.add_argument('--use-proxy', action='store_true', help='Flag to indicate if the proxy should be used')
     parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
     parser_configure.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
     parser_configure.add_argument('--attack-prompt-manual-input', action='store_true', help='Manually enter a single seed attack prompt string')
+    # The name of the function to call when this sub-command is selected
     parser_configure.set_defaults(func=configure)
 
+    # Parse the arguments supplied by the user at runtime
     args = parser.parse_args()
+
+    # If the user has specified a sub-command, call the function associated with it
     if hasattr(args, 'func'):
         args.func(args)
-    else:
-        parser.print_help()
 
+    # Uncomment this only if you want to make it mandatory to specify a sub-command
+    # else:
+    #     parser.print_help()
+
+    # TODO: Refactor all config code. Initializing, reading, loading - the code is terrible.
+    initialize_and_read_config()
     config = load_config()
     apply_proxy_settings(config)
 
     if args.version:
         print(f'AblitaFuzzer version 0.2-alpha')
         exit()
+
     elif args.test_call_abliterated_model:
         print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
         test_call_abliterated_model()
+
     elif args.test_call_target_model:
         print(f'{Fore.GREEN}[+] Testing calling the target model...')
         test_call_target_model()
+
+
     elif args.fuzz:
+
+        # TODO: Refactor this logic as part of the config refactor
+
         # Use prompt_styles_file_path from config if not provided via command line
         prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
+
         if not prompt_styles_file_path:
+
             print(f"{Fore.RED}[!] prompt_styles_file_path must be specified in config or as an argument.")
             exit(1)
+
         seed_prompt_input_file_path = config.get('prompts_section', 'seed_prompt_input_file_path')
+
         if not seed_prompt_input_file_path:
+
             print(f"{Fore.RED}[!] seed_prompt_input_file_path must be specified in config or as an argument.")
             exit(1)
 
+        # Send the actual attack against the target model API URL
         fuzz_target_model()
+
         # Automatically include all the analysis after fuzzing is completed
         save_classification_results()
+
+        # TODO: Decide if these get saved to disk, or just displayed to the user.
+        # TODO: Does this need to be renamed as something like "NLP analysis"?
         create_agreement_refusal_confused_charts()
+
+        # This must be run last, as it depends on the classifications to have been saved to a file.
         llm_results_analyzer.main()
 
     elif args.analyze_classify:
         save_classification_results()
         create_agreement_refusal_confused_charts()
+
     elif args.analyze_toxicity:
         analyze_toxicity()
+
     elif args.analyze_hate_speech:
         analyze_hate_speech()
+
     elif args.analyze_with_llm:
         llm_results_analyzer.main()
+
     else:
         print(f'{Fore.RED}[!] No action specified. Run with --help for more information.')
 
