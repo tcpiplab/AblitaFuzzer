@@ -605,6 +605,10 @@ def main():
             exit(1)
 
         fuzz_target_model()
+        # Automatically include all the analysis after fuzzing is completed
+        save_classification_results()
+        create_agreement_refusal_confused_charts()
+        llm_results_analyzer.main()
 
     elif args.analyze_classify:
         save_classification_results()
