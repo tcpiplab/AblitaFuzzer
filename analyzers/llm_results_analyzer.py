@@ -1,16 +1,16 @@
 import os
 import json
-from itertools import count
-
 from openai import OpenAI
 import datetime
 from colorama import Fore, init
 
+# TODO: Move this to main() and test to see if it still works correctly
 # Initialize colorama and set autoreset to True
 init(autoreset=True)
 
 
 def llm_analyzer_output_markdown(data):
+    # TODO: Rename 'data' to be more descriptive
 
     # Create the directory if it does not exist
     os.makedirs('results', exist_ok=True)
@@ -64,16 +64,18 @@ def llm_analyzer_output_markdown(data):
 
 def main():
 
-
+    # TODO: This should be a relative path
     # Set the CWD to '/Users/lukesheppard/Tools/AblitaFuzzer'
     os.chdir('/Users/lukesheppard/Tools/AblitaFuzzer')
 
+    # TODO: Move this to a config file but only after the config refactor is complete
     # Initialize OpenAI client pointing to the local server
     client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
 
-    # TODO: Make sure that each API call is a new conversation with no previous history or context
+    # TODO: Is it possible or necessary to reset the session between each API call?
+    #  So that each API call is a new conversation with no previous history or context?
 
-    # Read the JSON file
+    # Read the JSON file containing the classified results
     with open('results/classified_results.json') as file:
         data = json.load(file)
 
@@ -83,6 +85,7 @@ def main():
     # Initialize a counter to track progress
     counter = 0
 
+    # TODO: Why is this defined inside of main()? Should it be defined outside of main()?
     # Function to evaluate each pair using LLM and update classification
     def evaluate_and_update_classification(record):
 
@@ -105,6 +108,8 @@ def main():
         #    Additional testing and experimentation is needed to determine if this approach is effective.
         #
         # Send prompt and response to LLM for evaluation
+
+
         completion = client.chat.completions.create(
             # model="failspy/Phi-3-medium-4k-instruct-abliterated-v3-GGUF",
             model="TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF",
@@ -126,7 +131,6 @@ def main():
 
         # Add the LLM's analysis commentary to the report
         record['llm_analysis_commentary'] = completion.choices[0].message.content
-
 
 
     # Iterate through each record, evaluate, and update classification
