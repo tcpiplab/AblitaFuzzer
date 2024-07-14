@@ -491,6 +491,13 @@ def configure(args):
             config = configparser.ConfigParser()
             config.read(config_file_path)
             print(f"{Fore.GREEN}[+] Using existing configuration values.")
+            # TODO: Print out the entire config file
+            for section in config.sections():
+                print(f"{Fore.GREEN}[+] Section: {section}")
+                for key, value in config[section].items():
+                    print(f"{Fore.GREEN}[+] {key}: {value}")
+
+
             return config
         else:
             config = initialize_config(create_new=True)
@@ -554,6 +561,7 @@ def main():
     parser_configure.add_argument('--use-proxy', action='store_true', help='Flag to indicate if the proxy should be used')
     parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
     parser_configure.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
+    parser_configure.add_argument('--seed-prompt-manual-input', metavar='MANUAL_SEED_PROMPT', help='Manually enter a single seed prompt string')
     parser_configure.set_defaults(func=configure)
 
     args = parser.parse_args()
@@ -586,6 +594,7 @@ def main():
             exit(1)
 
         fuzz_target_model()
+
     elif args.analyze_classify:
         save_classification_results()
         create_agreement_refusal_confused_charts()
