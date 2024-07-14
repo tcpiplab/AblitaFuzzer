@@ -6,6 +6,8 @@ import time
 import json
 import requests
 from openai import OpenAI
+from pygments.lexer import default
+
 from analyzers.nlp_results_analyzer import analyze_toxicity, analyze_hate_speech, \
     create_agreement_refusal_confused_charts, \
     check_prompt_for_jailbreak, save_classification_results
@@ -525,6 +527,15 @@ def configure(args):
         'seed_prompt_input_file_path': seed_prompt_input_file_path
     }
 
+    # If the user wants to manually set 'attack-prompt-manual-input', we'll prompt them for it
+    attack_prompt_manual_input = questionary.text(
+            "Please enter the text you'd like to use as an attack prompt. "
+            "This will be used to generate new sequences of harmful behaviors."
+    ).ask()
+
+    if attack_prompt_manual_input:
+        config['DEFAULT']['attack_prompt_manual_input'] = attack_prompt_manual_input
+
     with open(config_file_path, 'w') as configfile:
         config.write(configfile)
 
@@ -561,7 +572,7 @@ def main():
     parser_configure.add_argument('--use-proxy', action='store_true', help='Flag to indicate if the proxy should be used')
     parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
     parser_configure.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
-    parser_configure.add_argument('--seed-prompt-manual-input', metavar='MANUAL_SEED_PROMPT', help='Manually enter a single seed prompt string')
+    parser_configure.add_argument('--attack-prompt-manual-input', action='store_true', help='Manually enter a single seed attack prompt string')
     parser_configure.set_defaults(func=configure)
 
     args = parser.parse_args()
