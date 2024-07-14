@@ -3,11 +3,13 @@ import requests
 from openai import OpenAI
 from colorama import Fore, init
 
+# Move this statement to main() and test that colors still work
 # Initialize colorama and set autoreset to True
 init(autoreset=True)
 
 
 def test_call_abliterated_model():
+    # TODO: Move these hardcoded values into a config file
 
     # Point to the local server
     client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
@@ -28,6 +30,7 @@ def test_call_abliterated_model():
 
 
 def test_call_target_model():
+    # TODO: Move these hardcoded values into a config file
 
     # Define the URL for the API
     url = "http://localhost:11434/api/chat"
@@ -59,3 +62,18 @@ def test_call_target_model():
     else:
         # Print the error
         print(f"{Fore.RED}[!] Error: {response.status_code} - {response.text}")
+
+
+def main():
+    # If this file is called directly by name, run both tests
+
+    # Test the call to the abliterated model
+    test_call_abliterated_model()
+
+    # Test the call to the target model
+    test_call_target_model()
+
+
+# If the script is being executed directly, run the `main` function
+if __name__ == '__main__':
+    main()
