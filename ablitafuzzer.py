@@ -1,4 +1,6 @@
 import argparse
+import re
+
 import questionary
 import csv
 import os
@@ -282,7 +284,7 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
     )
 
     # Print the raw user_prompt
-    print(f"{Fore.YELLOW}[*] User prompt: {user_prompt}")
+    # print(f"{Fore.YELLOW}[*] User prompt: {user_prompt}")
 
     # Verify that `completion` is not empty
     if not completion or not completion.choices:
@@ -293,9 +295,19 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         # Clean up the prompts
         prompts = [prompt.strip() for prompt in prompts if prompt.strip()]
 
+        # TODO: Remove the leading number, dot, space, if any
+        prompts = [re.sub(r'^\d+\.\s+', '', prompt) for prompt in prompts]
+
+        # TODO: Somehow use the LLM or even an external LLM to evaluate if the prompt is malicious
+        #  and only use the prompt if it is malicious. For example maybe try sending it to the OpenAI API
+        #  and only use the prompt if it refuses to generate a completion.
+
         # # Check if each prompt is a jailbreak
         # for prompt in prompts:
         #     check_prompt_for_jailbreak(prompt)
+
+        # Truncate the list of prompts to num_prompts
+        prompts = prompts[0:num_prompts]
 
         # Print a message about the length of the list of prompts
         print(f"{Fore.GREEN}[+] Generated {len(prompts)} malicious prompts.")
@@ -354,7 +366,6 @@ def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prom
         print(f"{Fore.RED}[!] Error appending few-shot examples: {e}")
         return
 
-    # TODO: Should we wrap the block of few-shot examples in triple backticks?
     # try:
     #
     #     # Finally, wrap the few-shot examples in the appropriate delimiters
