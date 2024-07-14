@@ -1,5 +1,7 @@
 import os
 import json
+from itertools import count
+
 from openai import OpenAI
 import datetime
 from colorama import Fore, init
@@ -17,10 +19,23 @@ def llm_analyzer_output_markdown(data):
     current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
     filename = f'results/Ablitafuzzer_Results_{current_time}.md'
 
+    total_records = len(data)
+    counter = 0
+
+    # Print the number of records found
+    print(f"{Fore.GREEN}[+] Found {total_records} attack results that will be added to the report.")
+
+    print(f"{Fore.GREEN}[+] Creating Markdown report file: {filename}")
+
+    # TODO: Write some kind of identifying header at the top of the markdown report to specify the following:
+    # date, time, target URL, attacker model, judge model, full command, seed attack filename, etc.
+
     # Open the file for writing
     with open(filename, 'w') as file:
         # Iterate over the records and write to the file in Markdown format
         for index, record in enumerate(data, start=1):
+            counter += 1
+
             # Attack ID is a unique header sent in the original attack so it can be found in Burp Suite
             section_header = f"# Attack ID: `{record['attack_id']}`"
             prompt_section = f"## Prompt\n```\n{record['prompt']}\n```"
@@ -28,19 +43,23 @@ def llm_analyzer_output_markdown(data):
             classification_section = f"## Keyword Analysis Classification\n{record['classification']}"
             llm_analysis_commentary = f"## LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
 
-            # TODO: Write some kind of identifying header at the top of the markdown report to specify the following:
-            # date, time, target URL, attacker model, judge model, full command, seed attack filename, etc.
+
             # Write to the file
+
+            print(f"{Fore.GREEN}[+] Appending {counter} of {total_records} to report: Attack ID: {record['attack_id']}")
+
             file.write(f"{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n{llm_analysis_commentary}\n\n")
 
-            # Print to STDOUT
-            print(section_header)
-            print(prompt_section)
-            print(response_section)
-            print(classification_section)
-            print()
+            # # Print to STDOUT
+            # print(section_header)
+            # print(prompt_section)
+            # print(response_section)
+            # print(classification_section)
+            # print()
 
-    print(f"Results have been saved to {filename}")
+    # TODO: Add appendix to report for hate speech and toxicity classifications
+
+    print(f"{Fore.GREEN}[+] Results have been saved to {filename}")
 
 
 def main():
