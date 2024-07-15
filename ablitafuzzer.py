@@ -125,34 +125,40 @@ def fuzz_target_model():
         return
 
     # Generate malicious prompts
-    try:
-        print(f"{Fore.GREEN}[+] Generating malicious prompts...")
+    # try:
+    print(f"{Fore.GREEN}[+] Generating malicious prompts...")
 
-        try:
-            malicious_prompts = generate_malicious_prompts(
-                num_prompts=num_prompts_to_generate,
-                prompt_styles_config=prompt_styles_config,
-                seed_prompt_csv_file_path=seed_prompt_input_file_path,
-                target_prompt_style=target_prompt_style
-            )
-        except Exception as e:
-            print(f"{Fore.RED}[!] An error occurred when calling generate_malicious_prompts(): {str(e)}")
-            return
-
-        if not malicious_prompts:
-            raise Exception(f"{Fore.RED}[!] No malicious prompts generated")
-
-        print(f"{Fore.GREEN}[+] Success generating {len(malicious_prompts)} malicious prompts.")
-    except Exception as e:
-        print(f"{Fore.RED}[!] An error occurred while generating malicious prompts: {str(e)}")
-        return
+    print(f"{Fore.MAGENTA}[i] Generating {num_prompts_to_generate} prompts...")
+    print(f"{Fore.MAGENTA}[i] Target prompt style: {target_prompt_style}")
+    print(f"{Fore.MAGENTA}[i] Prompt styles config: {prompt_styles_config}")
+    print(f"{Fore.MAGENTA}[i] Seed prompt input file: {seed_prompt_input_file_path}")
 
     # try:
-    #     print(f"{Fore.CYAN}[i] Printing malicious prompts...")
-    #     for prompt in malicious_prompts:
-    #         print(f"{Fore.CYAN}[i] Prompt: {prompt}")
+    malicious_prompts = generate_malicious_prompts(
+        num_prompts=num_prompts_to_generate,
+        prompt_styles_config=prompt_styles_config,
+        seed_prompt_csv_file_path=seed_prompt_input_file_path,
+        target_prompt_style=target_prompt_style
+    )
     # except Exception as e:
-    #     print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
+    #     print(f"{Fore.RED}[!] An error occurred when calling generate_malicious_prompts(): {str(e)}")
+    #     return
+
+    # if not malicious_prompts:
+    #     raise Exception(f"{Fore.RED}[!] No malicious prompts generated")
+
+    print(f"{Fore.GREEN}[+] Success generating {len(malicious_prompts)} malicious prompts.")
+
+    # except Exception as e:
+    #     print(f"{Fore.RED}[!] An error occurred while generating malicious prompts: {str(e)}")
+    #     return
+
+    try:
+        print(f"{Fore.CYAN}[i] Printing malicious prompts...")
+        for prompt in malicious_prompts:
+            print(f"{Fore.CYAN}[i] Prompt: {prompt}")
+    except Exception as e:
+        print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
 
     try:
         print(f"{Fore.GREEN}[+] Attacking target model with malicious prompts...")
@@ -307,7 +313,7 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         #     check_prompt_for_jailbreak(prompt)
 
         # Truncate the list of prompts to num_prompts
-        prompts = prompts[0:num_prompts]
+        prompts = prompts[0:int(num_prompts)]
 
         # Print a message about the length of the list of prompts
         print(f"{Fore.GREEN}[+] Generated {len(prompts)} malicious prompts.")
@@ -319,6 +325,9 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 
 # Function to generate malicious prompts using the abliterated model
 def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prompt_styles_config=None, target_prompt_style=None):
+
+    print(f"{Fore.CYAN}[i] Inside of generate_malicious_prompts function")
+
     client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
 
     # Verify that seed_prompt_csv_file_path is a string and not a file IO object
@@ -359,7 +368,7 @@ def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prom
             few_shot_seed_prompt_examples += f"\n<User>: {row[0]}\n<Assistant>: {row[1]}\n"
 
         # Print the raw string
-        # print(f"{Fore.YELLOW}[i] Few-shot seed prompt examples: {few_shot_seed_prompt_examples}")
+        print(f"{Fore.YELLOW}[i] Few-shot seed prompt examples: {few_shot_seed_prompt_examples}")
 
     except Exception as e:
 
