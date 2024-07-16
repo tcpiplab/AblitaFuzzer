@@ -153,12 +153,12 @@ def fuzz_target_model():
     #     print(f"{Fore.RED}[!] An error occurred while generating malicious prompts: {str(e)}")
     #     return
 
-    try:
-        print(f"{Fore.CYAN}[i] Printing malicious prompts...")
-        for prompt in malicious_prompts:
-            print(f"{Fore.CYAN}[i] Prompt: {prompt}")
-    except Exception as e:
-        print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
+    # try:
+    #     print(f"{Fore.CYAN}[i] Printing malicious prompts...")
+    #     for prompt in malicious_prompts:
+    #         print(f"{Fore.CYAN}[i] Prompt: {prompt}")
+    # except Exception as e:
+    #     print(f"{Fore.RED}[!] An error occurred while printing malicious prompts: {str(e)}")
 
     try:
         print(f"{Fore.GREEN}[+] Attacking target model with malicious prompts...")
@@ -326,7 +326,7 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 # Function to generate malicious prompts using the abliterated model
 def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prompt_styles_config=None, target_prompt_style=None):
 
-    print(f"{Fore.CYAN}[i] Inside of generate_malicious_prompts function")
+    # print(f"{Fore.CYAN}[i] Inside of generate_malicious_prompts function")
 
     client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
 
@@ -335,7 +335,7 @@ def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prom
         raise Exception(f"{Fore.RED}[!] csv_file_path argument must be a string")
 
     num_prompts = num_prompts
-    print(f"{Fore.CYAN}[i] Generating {num_prompts} malicious prompts...")
+    # print(f"{Fore.CYAN}[i] Generating {num_prompts} malicious prompts...")
 
     try:
         # Read the malicious seed prompt/response tuples from the CSV file into a list
