@@ -1,4 +1,5 @@
 import argparse
+import random
 import re
 
 import questionary
@@ -128,10 +129,10 @@ def fuzz_target_model():
     # try:
     print(f"{Fore.GREEN}[+] Generating malicious prompts...")
 
-    print(f"{Fore.MAGENTA}[i] Generating {num_prompts_to_generate} prompts...")
-    print(f"{Fore.MAGENTA}[i] Target prompt style: {target_prompt_style}")
-    print(f"{Fore.MAGENTA}[i] Prompt styles config: {prompt_styles_config}")
-    print(f"{Fore.MAGENTA}[i] Seed prompt input file: {seed_prompt_input_file_path}")
+    # print(f"{Fore.MAGENTA}[i] Generating {num_prompts_to_generate} prompts...")
+    # print(f"{Fore.MAGENTA}[i] Target prompt style: {target_prompt_style}")
+    # print(f"{Fore.MAGENTA}[i] Prompt styles config: {prompt_styles_config}")
+    # print(f"{Fore.MAGENTA}[i] Seed prompt input file: {seed_prompt_input_file_path}")
 
     # try:
     malicious_prompts = generate_malicious_prompts(
@@ -360,15 +361,25 @@ def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prom
 
         # TODO: Make the number of items configurable (currently 20)
         # TODO: Select random rows instead of the first 20.
+        # Select 20 random rows from list_of_seed_prompt_response_tuples
+
+        # Ensure the list has at least 20 items
+        if len(list_of_seed_prompt_response_tuples) < 20:
+            raise ValueError(f"{Fore.RED}[!] The input CSV list of seed prompt/response tuples must contain at least 20 items.")
+
+        # Select 20 random rows
+        selected_rows = random.sample(list_of_seed_prompt_response_tuples, 20)
+
         # Then, for each row, append the user question and assistant answer as a string
-        for row in list_of_seed_prompt_response_tuples[:20]:
+        # for row in list_of_seed_prompt_response_tuples[:20]:
+        for row in selected_rows:
 
             # TODO: For now hardcode the prompt delimiter style for vicuna/llama
             #  because the JSON file does not accommodate differentiating between user and assistant prompts.
             few_shot_seed_prompt_examples += f"\n<User>: {row[0]}\n<Assistant>: {row[1]}\n"
 
         # Print the raw string
-        print(f"{Fore.YELLOW}[i] Few-shot seed prompt examples: {few_shot_seed_prompt_examples}")
+        # print(f"{Fore.YELLOW}[i] Few-shot seed prompt examples: {few_shot_seed_prompt_examples}")
 
     except Exception as e:
 
