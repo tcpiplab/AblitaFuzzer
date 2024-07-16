@@ -360,7 +360,6 @@ def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prom
         few_shot_seed_prompt_examples = ""
 
         # TODO: Make the number of items configurable (currently 20)
-        # TODO: Select random rows instead of the first 20.
         # Select 20 random rows from list_of_seed_prompt_response_tuples
 
         # Ensure the list has at least 20 items
