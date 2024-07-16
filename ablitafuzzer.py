@@ -638,7 +638,7 @@ def main():
         llm_results_analyzer.main()
 
     if args.version:
-        print(f'AblitaFuzzer version 0.2-alpha')
+        print(f'AblitaFuzzer version 0.3-alpha')
         exit()
 
     elif args.test_call_abliterated_model:
