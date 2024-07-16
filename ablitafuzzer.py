@@ -583,17 +583,22 @@ def main():
     parser.add_argument('--version', action='store_true', help='Show version and exit')
     parser.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
     parser.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
-    parser.add_argument('--fuzz', action='store_true', help='Fuzz the target model')
+    # parser.add_argument('--fuzz', action='store_true', help='Fuzz the target model')
     parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
     parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
     parser.add_argument('--analyze-with-llm', action='store_true', help='Use the abliterated LLM to analyze the results')
     # TODO: Move --proxy back to being a common option
 
+    # Add the 'fuzz' sub-command
+    parser_fuzz = subparsers.add_parser('fuzz', help='Fuzz the target model')
+    parser_fuzz.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+
+
     # Add the 'configure' sub-command
     parser_configure = subparsers.add_parser('configure', help='configure user settings')
-    parser_configure.add_argument('--use-proxy', action='store_true', help='Flag to indicate if the proxy should be used')
-    parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    # parser_configure.add_argument('--use-proxy', action='store_true', help='Flag to indicate if the proxy should be used')
+    # parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
     parser_configure.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
     parser_configure.add_argument('--attack-prompt-manual-input', action='store_true', help='Manually enter a single seed attack prompt string')
     # The name of the function to call when this sub-command is selected
@@ -613,7 +618,24 @@ def main():
     # TODO: Refactor all config code. Initializing, reading, loading - the code is terrible.
     initialize_and_read_config()
     config = load_config()
-    apply_proxy_settings(config)
+    # apply_proxy_settings(config)
+
+    # If the user specified `ablitafuzzer.py fuzz --proxy 127.0.0.1:8080`, then set the environment variables with os.environ
+    if args.proxy:
+        os.environ['http_proxy'] = args.proxy
+        os.environ['https_proxy'] = args.proxy
+
+        fuzz_target_model()
+
+        # Automatically include all the analysis after fuzzing is completed
+        save_classification_results()
+
+        # TODO: Decide if these get saved to disk, or just displayed to the user.
+        # TODO: Does this need to be renamed as something like "NLP analysis"?
+        create_agreement_refusal_confused_charts()
+
+        # This must be run last, as it depends on the classifications to have been saved to a file.
+        llm_results_analyzer.main()
 
     if args.version:
         print(f'AblitaFuzzer version 0.2-alpha')
