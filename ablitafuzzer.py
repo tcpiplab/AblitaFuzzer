@@ -588,6 +588,7 @@ def main():
     parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
     parser.add_argument('--analyze-with-llm', action='store_true', help='Use the abliterated LLM to analyze the results')
+    # TODO: Move --proxy back to being a common option
 
     # Add the 'configure' sub-command
     parser_configure = subparsers.add_parser('configure', help='configure user settings')
