@@ -576,6 +576,12 @@ def apply_proxy_settings(config):
 
 def run_all_test_functions(args):
 
+    if args.proxy:
+
+        print(f'{Fore.GREEN}[+] Testing through proxy at {args.proxy}')
+        os.environ['http_proxy'] = args.proxy
+        os.environ['https_proxy'] = args.proxy
+
     if args.test_call_target_model:
 
         print(f'{Fore.GREEN}[+] Testing calling the target model...')
@@ -666,6 +672,7 @@ def main():
     parser_test.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
     parser_test.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
     parser_test.add_argument('--test-all', action='store_true', help='Test all API calls')
+    parser_test.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
     # parser_test.set_defaults(func=run_all_test_functions(args))
 
 
