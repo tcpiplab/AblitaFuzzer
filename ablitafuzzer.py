@@ -574,13 +574,51 @@ def apply_proxy_settings(config):
         print(f"Proxy set to {config['proxy']}")
 
 
-def run_all_test_functions():
-    # If the user specified the 'test' subcommand
-    print(f'{Fore.GREEN}[+] Testing calling the target model...')
-    test_call_target_model()
+def run_all_test_functions(args):
 
-    print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
-    test_call_abliterated_model()
+    if args.test_call_target_model:
+
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
+        test_call_target_model()
+
+        exit()
+
+    elif args.test_call_abliterated_model:
+
+        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+        test_call_abliterated_model()
+
+        exit()
+
+    elif args.test_all:
+
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
+        test_call_target_model()
+
+        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+        test_call_abliterated_model()
+
+        exit()
+
+    elif not args.test_call_target_model and not args.test_call_abliterated_model and not args.test_all:
+
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
+        test_call_target_model()
+
+        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+        test_call_abliterated_model()
+
+        exit()
+
+    # We should not be able to reach this point
+    else:
+
+        print(f'{Fore.RED}[!] No test function specified. Please specify a test function to run:')
+        print(f'    --test-call-abliterated-model')
+        print(f'    --test-call-target-model')
+        print(f'    --test-all')
+
+        exit()
 
 
 def run_fuzz_and_analyze(parser):
@@ -621,13 +659,14 @@ def main():
     # Add the 'fuzz' sub-command
     parser_fuzz = subparsers.add_parser('fuzz', help='Fuzz the target model')
     parser_fuzz.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
-    parser_fuzz.set_defaults(func=run_fuzz_and_analyze(parser))
+    parser_fuzz.set_defaults(func=run_fuzz_and_analyze)
 
     # Add the 'test' sub-command
     parser_test = subparsers.add_parser('test', help='Test configuration and connectivity to APIs but do not fuzz')
     parser_test.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
     parser_test.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
-    parser_test.set_defaults(func=run_all_test_functions())
+    parser_test.add_argument('--test-all', action='store_true', help='Test all API calls')
+    # parser_test.set_defaults(func=run_all_test_functions(args))
 
 
     # Add the 'configure' sub-command
@@ -639,6 +678,8 @@ def main():
 
     # Parse the arguments supplied by the user at runtime
     args = parser.parse_args()
+
+    parser_test.set_defaults(func=run_all_test_functions(args))
 
     # TODO: Refactor all config code. Initializing, reading, loading - the code is terrible.
     # initialize_and_read_config()
