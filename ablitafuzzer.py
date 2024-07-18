@@ -83,7 +83,7 @@ def initialize_config(create_new=False):
 #         print(f"{Fore.RED}[!] An error occurred trying to get values from the configuration file: {e}")
 
 
-def fuzz_target_model():
+def fuzz_target_model(session):
 
     prompt_styles_file_path = 'inputs/prompt-styles/prompt-styles.json'
     seed_prompt_input_file_path = 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv'
@@ -165,7 +165,7 @@ def fuzz_target_model():
 
     try:
         print(f"{Fore.GREEN}[+] Attacking target model with malicious prompts...")
-        results = attack_target_model_api(prompt_styles_config, malicious_prompts, target_prompt_style)
+        results = attack_target_model_api(session, prompt_styles_config, malicious_prompts, target_prompt_style)
     except Exception as e:
         print(f"{Fore.RED}[!] An error occurred while attacking the target model: {str(e)}")
         return
@@ -412,7 +412,7 @@ TARGET_MODEL_API = "http://localhost:11434/api/chat"
 
 
 # Function to attack the target model with malicious prompts
-def attack_target_model_api(prompt_styles_config, prompts, model_name):
+def attack_target_model_api(session, prompt_styles_config, prompts, model_name):
     delimiter_start = prompt_styles_config[model_name]['delimiter_start']
     delimiter_end = prompt_styles_config[model_name]['delimiter_end']
 
@@ -463,7 +463,7 @@ def attack_target_model_api(prompt_styles_config, prompts, model_name):
             try:
                 print(f"{Fore.GREEN}[+] Attack payload #{i + 1} will be sent to target model API: {TARGET_MODEL_API}")
                 # Send the payload to the target API
-                response = requests.post(TARGET_MODEL_API, headers=headers, data=json.dumps(payload))
+                response = session.post(TARGET_MODEL_API, headers=headers, data=json.dumps(payload))
 
                 print(f"{Fore.GREEN}[+] Attack payload #{i + 1}. Response: {response.status_code}")
                 i += 1
@@ -627,15 +627,20 @@ def run_all_test_functions(args):
         exit()
 
 
-def run_fuzz_and_analyze(parser):
-    # Parse the arguments supplied by the user at runtime
-    args = parser.parse_args()
+def run_fuzz_and_analyze(args):
+    # Extract the proxy from the arguments
+    proxy = args.proxy
+    proxies = {
+        "http": f"http://{proxy}",
+        "https": f"http://{proxy}"
+    } if proxy else {}
 
-    if args.proxy:
-        os.environ['http_proxy'] = args.proxy
-        os.environ['https_proxy'] = args.proxy
+    # Set up the requests session
+    session = requests.Session()
+    if proxies:
+        session.proxies.update(proxies)
 
-    fuzz_target_model()
+    fuzz_target_model(session)
 
     # Automatically include all the analysis after fuzzing is completed
     save_classification_results()
@@ -673,7 +678,7 @@ def main():
     parser_test.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
     parser_test.add_argument('--test-all', action='store_true', help='Test all API calls')
     parser_test.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
-    # parser_test.set_defaults(func=run_all_test_functions(args))
+    parser_test.set_defaults(func=run_all_test_functions)
 
 
     # Add the 'configure' sub-command
@@ -686,16 +691,22 @@ def main():
     # Parse the arguments supplied by the user at runtime
     args = parser.parse_args()
 
-    parser_test.set_defaults(func=run_all_test_functions(args))
+
 
     # TODO: Refactor all config code. Initializing, reading, loading - the code is terrible.
     # initialize_and_read_config()
     # config = load_config()
 
-
-    # If the user has specified a sub-command, call the function associated with it
+    # Call the function associated with the chosen sub-command
     if hasattr(args, 'func'):
         args.func(args)
+    else:
+        parser.print_help()
+
+
+    # # If the user has specified a sub-command, call the function associated with it
+    # if hasattr(args, 'func'):
+    #     args.func()
 
         # if args.proxy:
         #     os.environ['http_proxy'] = args.proxy
@@ -705,13 +716,13 @@ def main():
         print(f'AblitaFuzzer version 0.3-alpha')
         exit()
 
-    elif args.test_call_abliterated_model:
-        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
-        test_call_abliterated_model()
-
-    elif args.test_call_target_model:
-        print(f'{Fore.GREEN}[+] Testing calling the target model...')
-        test_call_target_model()
+    # elif args.test_call_abliterated_model:
+    #     print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+    #     test_call_abliterated_model()
+    #
+    # elif args.test_call_target_model:
+    #     print(f'{Fore.GREEN}[+] Testing calling the target model...')
+    #     test_call_target_model()
 
     elif args.analyze_classify:
         save_classification_results()
