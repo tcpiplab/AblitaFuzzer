@@ -628,17 +628,23 @@ def run_all_test_functions(args):
 
 
 def run_fuzz_and_analyze(args):
-    # Extract the proxy from the arguments
-    proxy = args.proxy
-    proxies = {
-        "http": f"http://{proxy}",
-        "https": f"http://{proxy}"
-    } if proxy else {}
-    # TODO FIXME The proxy is always used, even without adding the --proxy flag with --fuzz
+
+    proxies = None
+
+    if args.proxy:
+        print(f"Using proxy: {args.proxy}")
+        proxy = args.proxy
+        proxies = {
+            "http": f"http://{proxy}",
+            "https": f"http://{proxy}"
+        }
+    else:
+        print("No proxy specified")
+
 
     # Set up the requests session
     session = requests.Session()
-    if proxies:
+    if proxies is not None:
         session.proxies.update(proxies)
 
     fuzz_target_model(session)
@@ -670,7 +676,8 @@ def main():
 
     # Add the 'fuzz' sub-command
     parser_fuzz = subparsers.add_parser('fuzz', help='Fuzz the target model')
-    parser_fuzz.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    # parser_fuzz.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    parser_fuzz.add_argument('--proxy', metavar='IP:PORT', help='Specify the proxy to use')
     parser_fuzz.set_defaults(func=run_fuzz_and_analyze)
 
     # Add the 'test' sub-command
