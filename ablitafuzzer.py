@@ -124,7 +124,7 @@ def fuzz_target_model(session):
     try:
         with open('results/results.json', 'w') as f:
             json.dump(results, f, indent=4)
-        print(f"{Fore.GREEN}[+] Fuzzing completed. Results saved to 'results.json'.")
+        print(f"{Fore.GREEN}[+] Fuzzing completed. Results saved to 'results/results.json'.")
     except Exception as e:
         print(f"{Fore.RED}[!] An error occurred while outputting results: {str(e)}")
         return
@@ -434,7 +434,7 @@ def run_all_test_functions(args):
     exit()
 
 
-def run_fuzz_and_analyze(args):
+def run_fuzz_attack(args):
 
     proxies = None
 
@@ -456,7 +456,22 @@ def run_fuzz_and_analyze(args):
 
     fuzz_target_model(session)
 
-    # Automatically include all the analysis after fuzzing is completed
+    # # Automatically include all the analysis after fuzzing is completed
+    # save_classification_results()
+    #
+    # # TODO: Decide if these get saved to disk, or just displayed to the user.
+    # # TODO: Does this need to be renamed as something like "NLP analysis"?
+    # create_agreement_refusal_confused_charts()
+    #
+    # # This must be run last, as it depends on the classifications to have been saved to a file.
+    # llm_results_analyzer.main()
+
+
+def run_all_analyzers(args):
+
+    # We don't really need the args that were passed in. But they're there if we need them later.
+    # TODO: We could add an argument to control whether or not to save the results to disk.
+
     save_classification_results()
 
     # TODO: Decide if these get saved to disk, or just displayed to the user.
@@ -476,18 +491,19 @@ def main():
 
     # Common options when running this tool
     parser.add_argument('--version', action='store_true', help='Show version and exit')
-    parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
-    parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
-    parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
-    parser.add_argument('--analyze-with-llm', action='store_true', help='Use the abliterated LLM to analyze the results')
+
+    # Add the 'analyze' sub-command
+    parser_analyze = subparsers.add_parser('analyze', help='Analyze results from the most recent fuzzing attack')
+    # parser_analyze.add_argument('--results-file', metavar='FILE', help='The results file to analyze')
+    parser_analyze.set_defaults(func=run_all_analyzers)
 
     # Add the 'fuzz' sub-command
     parser_fuzz = subparsers.add_parser('fuzz', help='Fuzz the target model')
     parser_fuzz.add_argument('--proxy', metavar='IP:PORT', help='Specify the proxy to use')
-    parser_fuzz.set_defaults(func=run_fuzz_and_analyze)
+    parser_fuzz.set_defaults(func=run_fuzz_attack)
 
     # Add the 'test' sub-command
-    parser_test = subparsers.add_parser('test', help='Test configuration and connectivity to APIs but do not fuzz')
+    parser_test = subparsers.add_parser('test', help='Test calling both APIs but do not fuzz')
     parser_test.add_argument('--proxy', metavar='IP:PORT', help='Specify the proxy to use')
     parser_test.set_defaults(func=run_all_test_functions)
 
@@ -501,24 +517,9 @@ def main():
         parser.print_help()
 
     if args.version:
-        print(f'AblitaFuzzer version 0.3-alpha')
+        print(f'AblitaFuzzer version 0.4-alpha')
         exit()
 
-    elif args.analyze_classify:
-        save_classification_results()
-        create_agreement_refusal_confused_charts()
-
-    elif args.analyze_toxicity:
-        analyze_toxicity()
-
-    elif args.analyze_hate_speech:
-        analyze_hate_speech()
-
-    elif args.analyze_with_llm:
-        llm_results_analyzer.main()
-
-    else:
-        print(f'{Fore.RED}[!] No action specified. Run with --help for more information.')
 
 if __name__ == '__main__':
     main()
