@@ -59,33 +59,35 @@ def initialize_config(create_new=False):
     return config_object
 
 
-def initialize_and_read_config():
-    global num_prompts_to_generate, prompt_styles_file_path, seed_prompt_input_file_path
-    # Initialize configuration
-    config = initialize_config()
-    # Read the configuration file
-    config.read('configs/config.ini')
-    try:
+# def initialize_and_read_config():
+#     global num_prompts_to_generate, prompt_styles_file_path, seed_prompt_input_file_path
+#     # Initialize configuration
+#     config = initialize_config()
+#     # Read the configuration file
+#     config.read('configs/config.ini')
+#     try:
+#
+#         print(f"{Fore.GREEN}[+] Will try to get values from the configuration file...")
+#
+#         # Get values from the configuration file
+#         num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
+#         prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
+#         seed_prompt_input_file_path = config.get('DEFAULT', 'seed_prompt_input_file_path')
+#
+#     except KeyError as e:
+#
+#         print(f"{Fore.RED}[!] Configuration key error: {e}")
+#
+#     except Exception as e:
+#
+#         print(f"{Fore.RED}[!] An error occurred trying to get values from the configuration file: {e}")
 
-        print(f"{Fore.GREEN}[+] Will try to get values from the configuration file...")
 
-        # Get values from the configuration file
-        num_prompts_to_generate = config.get('prompts_section', 'num_prompts_to_generate')
-        prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
-        seed_prompt_input_file_path = config.get('DEFAULT', 'seed_prompt_input_file_path')
+def fuzz_target_model(session):
 
-    except KeyError as e:
-
-        print(f"{Fore.RED}[!] Configuration key error: {e}")
-
-    except Exception as e:
-
-        print(f"{Fore.RED}[!] An error occurred trying to get values from the configuration file: {e}")
-
-
-
-# def fuzz_target_model(seed_prompt_input_file_path):
-def fuzz_target_model():
+    prompt_styles_file_path = 'inputs/prompt-styles/prompt-styles.json'
+    seed_prompt_input_file_path = 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv'
+    num_prompts_to_generate = 10
 
     try:
         with open(prompt_styles_file_path) as prompt_styles_file:
@@ -163,7 +165,7 @@ def fuzz_target_model():
 
     try:
         print(f"{Fore.GREEN}[+] Attacking target model with malicious prompts...")
-        results = attack_target_model_api(prompt_styles_config, malicious_prompts, target_prompt_style)
+        results = attack_target_model_api(session, prompt_styles_config, malicious_prompts, target_prompt_style)
     except Exception as e:
         print(f"{Fore.RED}[!] An error occurred while attacking the target model: {str(e)}")
         return
@@ -410,7 +412,7 @@ TARGET_MODEL_API = "http://localhost:11434/api/chat"
 
 
 # Function to attack the target model with malicious prompts
-def attack_target_model_api(prompt_styles_config, prompts, model_name):
+def attack_target_model_api(session, prompt_styles_config, prompts, model_name):
     delimiter_start = prompt_styles_config[model_name]['delimiter_start']
     delimiter_end = prompt_styles_config[model_name]['delimiter_end']
 
@@ -461,7 +463,7 @@ def attack_target_model_api(prompt_styles_config, prompts, model_name):
             try:
                 print(f"{Fore.GREEN}[+] Attack payload #{i + 1} will be sent to target model API: {TARGET_MODEL_API}")
                 # Send the payload to the target API
-                response = requests.post(TARGET_MODEL_API, headers=headers, data=json.dumps(payload))
+                response = session.post(TARGET_MODEL_API, headers=headers, data=json.dumps(payload))
 
                 print(f"{Fore.GREEN}[+] Attack payload #{i + 1}. Response: {response.status_code}")
                 i += 1
@@ -572,6 +574,92 @@ def apply_proxy_settings(config):
         print(f"Proxy set to {config['proxy']}")
 
 
+def run_all_test_functions(args):
+
+    if args.proxy:
+
+        print(f'{Fore.GREEN}[+] Testing through proxy at {args.proxy}')
+        os.environ['http_proxy'] = args.proxy
+        os.environ['https_proxy'] = args.proxy
+
+    if args.test_call_target_model:
+
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
+        test_call_target_model()
+
+        exit()
+
+    elif args.test_call_abliterated_model:
+
+        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+        test_call_abliterated_model()
+
+        exit()
+
+    elif args.test_all:
+
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
+        test_call_target_model()
+
+        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+        test_call_abliterated_model()
+
+        exit()
+
+    elif not args.test_call_target_model and not args.test_call_abliterated_model and not args.test_all:
+
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
+        test_call_target_model()
+
+        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+        test_call_abliterated_model()
+
+        exit()
+
+    # We should not be able to reach this point
+    else:
+
+        print(f'{Fore.RED}[!] No test function specified. Please specify a test function to run:')
+        print(f'    --test-call-abliterated-model')
+        print(f'    --test-call-target-model')
+        print(f'    --test-all')
+
+        exit()
+
+
+def run_fuzz_and_analyze(args):
+
+    proxies = None
+
+    if args.proxy:
+        print(f"Using proxy: {args.proxy}")
+        proxy = args.proxy
+        proxies = {
+            "http": f"http://{proxy}",
+            "https": f"http://{proxy}"
+        }
+    else:
+        print("No proxy specified")
+
+
+    # Set up the requests session
+    session = requests.Session()
+    if proxies is not None:
+        session.proxies.update(proxies)
+
+    fuzz_target_model(session)
+
+    # Automatically include all the analysis after fuzzing is completed
+    save_classification_results()
+
+    # TODO: Decide if these get saved to disk, or just displayed to the user.
+    # TODO: Does this need to be renamed as something like "NLP analysis"?
+    create_agreement_refusal_confused_charts()
+
+    # This must be run last, as it depends on the classifications to have been saved to a file.
+    llm_results_analyzer.main()
+
+
 def main():
     # Instantiate an argument parser object
     parser = argparse.ArgumentParser(description='AblitaFuzzer')
@@ -581,19 +669,28 @@ def main():
 
     # Common options when running this tool
     parser.add_argument('--version', action='store_true', help='Show version and exit')
-    parser.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
-    parser.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
-    parser.add_argument('--fuzz', action='store_true', help='Fuzz the target model')
     parser.add_argument('--analyze-classify', action='store_true', help='Classify the results')
     parser.add_argument('--analyze-toxicity', action='store_true', help='Analyze results for toxicity')
     parser.add_argument('--analyze-hate-speech', action='store_true', help='Analyze results for hate speech')
     parser.add_argument('--analyze-with-llm', action='store_true', help='Use the abliterated LLM to analyze the results')
-    # TODO: Move --proxy back to being a common option
+
+    # Add the 'fuzz' sub-command
+    parser_fuzz = subparsers.add_parser('fuzz', help='Fuzz the target model')
+    # parser_fuzz.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    parser_fuzz.add_argument('--proxy', metavar='IP:PORT', help='Specify the proxy to use')
+    parser_fuzz.set_defaults(func=run_fuzz_and_analyze)
+
+    # Add the 'test' sub-command
+    parser_test = subparsers.add_parser('test', help='Test configuration and connectivity to APIs but do not fuzz')
+    parser_test.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
+    parser_test.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
+    parser_test.add_argument('--test-all', action='store_true', help='Test all API calls')
+    parser_test.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    parser_test.set_defaults(func=run_all_test_functions)
+
 
     # Add the 'configure' sub-command
     parser_configure = subparsers.add_parser('configure', help='configure user settings')
-    parser_configure.add_argument('--use-proxy', action='store_true', help='Flag to indicate if the proxy should be used')
-    parser_configure.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
     parser_configure.add_argument('--seed-prompt-input-file', metavar='FILE', help='Specify the seed prompt input file')
     parser_configure.add_argument('--attack-prompt-manual-input', action='store_true', help='Manually enter a single seed attack prompt string')
     # The name of the function to call when this sub-command is selected
@@ -602,63 +699,38 @@ def main():
     # Parse the arguments supplied by the user at runtime
     args = parser.parse_args()
 
-    # If the user has specified a sub-command, call the function associated with it
-    if hasattr(args, 'func'):
-        args.func(args)
 
-    # Uncomment this only if you want to make it mandatory to specify a sub-command
-    # else:
-    #     parser.print_help()
 
     # TODO: Refactor all config code. Initializing, reading, loading - the code is terrible.
-    initialize_and_read_config()
-    config = load_config()
-    apply_proxy_settings(config)
+    # initialize_and_read_config()
+    # config = load_config()
+
+    # Call the function associated with the chosen sub-command
+    if hasattr(args, 'func'):
+        args.func(args)
+    else:
+        parser.print_help()
+
+
+    # # If the user has specified a sub-command, call the function associated with it
+    # if hasattr(args, 'func'):
+    #     args.func()
+
+        # if args.proxy:
+        #     os.environ['http_proxy'] = args.proxy
+        #     os.environ['https_proxy'] = args.proxy
 
     if args.version:
-        print(f'AblitaFuzzer version 0.2-alpha')
+        print(f'AblitaFuzzer version 0.3-alpha')
         exit()
 
-    elif args.test_call_abliterated_model:
-        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
-        test_call_abliterated_model()
-
-    elif args.test_call_target_model:
-        print(f'{Fore.GREEN}[+] Testing calling the target model...')
-        test_call_target_model()
-
-
-    elif args.fuzz:
-
-        # TODO: Refactor this logic as part of the config refactor
-
-        # Use prompt_styles_file_path from config if not provided via command line
-        prompt_styles_file_path = config.get('prompts_section', 'prompt_styles_file_path')
-
-        if not prompt_styles_file_path:
-
-            print(f"{Fore.RED}[!] prompt_styles_file_path must be specified in config or as an argument.")
-            exit(1)
-
-        seed_prompt_input_file_path = config.get('prompts_section', 'seed_prompt_input_file_path')
-
-        if not seed_prompt_input_file_path:
-
-            print(f"{Fore.RED}[!] seed_prompt_input_file_path must be specified in config or as an argument.")
-            exit(1)
-
-        # Send the actual attack against the target model API URL
-        fuzz_target_model()
-
-        # Automatically include all the analysis after fuzzing is completed
-        save_classification_results()
-
-        # TODO: Decide if these get saved to disk, or just displayed to the user.
-        # TODO: Does this need to be renamed as something like "NLP analysis"?
-        create_agreement_refusal_confused_charts()
-
-        # This must be run last, as it depends on the classifications to have been saved to a file.
-        llm_results_analyzer.main()
+    # elif args.test_call_abliterated_model:
+    #     print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+    #     test_call_abliterated_model()
+    #
+    # elif args.test_call_target_model:
+    #     print(f'{Fore.GREEN}[+] Testing calling the target model...')
+    #     test_call_target_model()
 
     elif args.analyze_classify:
         save_classification_results()
