@@ -26,7 +26,19 @@ def test_call_abliterated_model():
         temperature=0.7,
     )
 
-    print(completion.choices[0].message.content)
+    try:
+
+        print(f"{Fore.GREEN}[+] Response from abliterated model:{Fore.RESET}\n  {completion.choices[0].message.content}")
+
+    except AttributeError as e:
+
+        # This error can happen if the abliterated model is supposed to be running on localhost (e.g., via LM Studio )
+        # but its API server is actually not running at all
+        print(f"{Fore.RED}[!] Error calling the abliterated model: {e}{Fore.RESET}")
+        print(f"{Fore.RED}[!] This can happen if the abliterated model is supposed to be running on "
+              f"localhost but its API server is actually not running at all.{Fore.RESET}")
+        print(f"{Fore.RED}[!] Please make sure that the abliterated model is running and that "
+              f"its API server is reachable, whether on localhost or on a remote server.{Fore.RESET}")
 
 
 def test_call_target_model():
@@ -41,7 +53,7 @@ def test_call_target_model():
         "messages": [
             {
                 "role": "user",
-                "content": "why is the sky blue?"
+                "content": "Introduce yourself."
             }
         ],
         "stream": False
@@ -55,13 +67,23 @@ def test_call_target_model():
     # Send the POST request
     response = requests.post(url, headers=headers, data=json.dumps(payload))
 
-    # Check if the request was successful
+    # Check if the request was successful or if it returned a different HTTP status code
     if response.status_code == 200:
-        # Print the response from the server
-        print(f"{Fore.GREEN}[+] Response:", response.json())
+
+        try:
+            # Print the response from the server
+            print(f"{Fore.GREEN}[+] Response from target model:{Fore.RESET}\n", response.json().get("message").get("content"))
+
+        except requests.exceptions.RequestException as e:
+            # This error can happen if the target model is supposed to be running on localhost but is not actually running
+            print(f"{Fore.RED}[!] Error sending request to target model:{Fore.RESET}\n  {e}")
+            print(f"{Fore.RED}[!] This error can happen if the target model is unreachable, for example if the target "
+                  "model is supposed to be running on localhost but is not actually running at all.")
+            print(f"{Fore.RED}[!] Check that the target model is running and accessible at the target URL, "
+                  f"whether on localhost or hosted on a remote server URL.{Fore.RESET}")
     else:
         # Print the error
-        print(f"{Fore.RED}[!] Error: {response.status_code} - {response.text}")
+        print(f"{Fore.RED}[!] Error from target model:{Fore.RESET}\n  {response.status_code} - {response.text}")
 
 
 def main():
