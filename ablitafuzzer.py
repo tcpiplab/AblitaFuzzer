@@ -425,49 +425,13 @@ def run_all_test_functions(args):
         os.environ['http_proxy'] = args.proxy
         os.environ['https_proxy'] = args.proxy
 
-    if args.test_call_target_model:
+    print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
+    test_call_abliterated_model()
 
-        print(f'{Fore.GREEN}[+] Testing calling the target model...')
-        test_call_target_model()
+    print(f'{Fore.GREEN}[+] Testing calling the target model...')
+    test_call_target_model()
 
-        exit()
-
-    elif args.test_call_abliterated_model:
-
-        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
-        test_call_abliterated_model()
-
-        exit()
-
-    elif args.test_all:
-
-        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
-        test_call_abliterated_model()
-
-        print(f'{Fore.GREEN}[+] Testing calling the target model...')
-        test_call_target_model()
-
-        exit()
-
-    elif not args.test_call_target_model and not args.test_call_abliterated_model and not args.test_all:
-
-        print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
-        test_call_abliterated_model()
-
-        print(f'{Fore.GREEN}[+] Testing calling the target model...')
-        test_call_target_model()
-
-        exit()
-
-    # We should not be able to reach this point
-    else:
-
-        print(f'{Fore.RED}[!] No test function specified. Please specify a test function to run:')
-        print(f'    --test-call-abliterated-model')
-        print(f'    --test-call-target-model')
-        print(f'    --test-all')
-
-        exit()
+    exit()
 
 
 def run_fuzz_and_analyze(args):
@@ -524,9 +488,6 @@ def main():
 
     # Add the 'test' sub-command
     parser_test = subparsers.add_parser('test', help='Test configuration and connectivity to APIs but do not fuzz')
-    parser_test.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
-    parser_test.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
-    parser_test.add_argument('--test-all', action='store_true', help='Test all API calls')
     parser_test.add_argument('--proxy', metavar='IP:PORT', help='Specify the proxy to use')
     parser_test.set_defaults(func=run_all_test_functions)
 
