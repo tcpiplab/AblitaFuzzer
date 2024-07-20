@@ -10,18 +10,85 @@ URL, whether in the cloud, on-premises, or even on localhost.
 
 <div style="text-align:center"><img width="33%" src="assets/ablitafuzzer.png" /></div>
 
-### Running AblitaFuzzer
+### Installation, setup, and usage
 
-1. Clone this repository and `cd` into the `AblitaFuzzer` directory.
-2. Set up a virtual environment (e.g. `python3 -m venv AblitaFuzzer_venv && source AblitaFuzzer_venv/bin/activate`)
-3. Install the required dependencies into your virtual environment (e.g. `pip3 install -r requirements.txt`).
-4. Host an abliterated LLM chatbot API at a localhost URL. LM Studio is a great tool for this purpose.
-5. Edit the `configs/config.ini` file to specify the URL of the target LLM chatbot API, and then run the following 
-command to start fuzzing:
+#### Clone the repository
 
 ```bash
-python3 ablitafuzzer.py --fuzz
+git clone git@github.com:tcpiplab/AblitaFuzzer.git
+cd AblitaFuzzer
 ```
+
+#### Set up a virtual environment
+
+```bash
+python3 -m venv AblitaFuzzer_venv
+source AblitaFuzzer_venv/bin/activate
+```
+
+#### Install the required packages
+
+```bash
+pip3 install -r requirements.txt
+```
+
+Or, depending on your OS...
+
+```bash
+python3 -m pip3 install -r requirements.txt
+```
+
+#### Set up the abliterated "attacker" LLM API
+
+- Host an [abliterated](https://huggingface.co/collections/failspy/abliterated-v3-664a8ad0db255eefa7d0012b) or uncensored LLM at a localhost API URL. 
+- Either [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/) are great tools for this purpose, regardless of your OS.
+- Note that this API URL will also be used for analysis of the attack request/response pairs.
+- Edit the API call parameters in the following places:
+  - Set the API call parameters in `ablitafuzzer.call_abliterated_model_api()`
+  - Set the `base_url` in `ablitafuzzer.generate_malicious_prompts()`.
+  - Set them again in `tests.test_calling_apis.test_call_abliterated_model()` so they match the values used in the previous step.
+
+#### Set up the target LLM API URL and payload
+
+- Edit API call parameters in `ablitafuzzer.attack_target_model_api()`:
+  - Set the `TARGET_MODEL_API` global variable just above the function definition.
+  - Set the `payload` values inside the function definition.
+  - Set them again in `tests.test_calling_apis.test_call_target_model` so they match the values used in the previous step.
+
+#### Test calling both API URLs
+
+```bash
+python3 ablitafuzzer.py test
+```
+
+Or, if proxying through Burp or Zap:
+
+```bash
+python3 ablitafuzzer.py test --proxy 127.0.0.1:8080
+```
+
+#### Run the fuzzer
+
+```bash
+python3 ablitafuzzer.py fuzz
+```
+
+Or, if proxying through Burp or Zap:
+
+```bash
+python3 ablitafuzzer.py fuzz --proxy 127.0.0.1:8080
+```
+
+#### Analyze the results
+
+```bash
+python3 ablitafuzzer.py analyze
+```
+
+- Now you can view a Markdown file containing the results and analysis commentary by manually opening the newest file (the one with the most recent timestamp in its name) in the `results/` directory. For example:
+  - `Ablitafuzzer_Results_2024-07-20-10-00.md`
+- Note that you can also correlate individual malicious prompt requests from the attack by searching in your proxy history for the globally unique header for that attack request. For example:
+  - `AblitaFuzzer-Attack-ID: 2024-07-20-09-55-00-284a0585-e147-456b-b8d2-0eebca61f5f7`
 
 ### Why AblitaFuzzer?
 
@@ -32,26 +99,31 @@ rarely allowed in real-world pentesting engagements - AblitaFuzzer is intended t
 
 ### Aren't there better tools for this kind of thing?
 
-Of course. But AblitaFuzzer is intended to be used in conjunction with other tools to perform a complete pentest. Most 
-likely you should use it as a first pass against a target LLM to get a broad impression of what kind of filtering and 
-guardrails the target LLM is using. The intention is that analyzing AblitaFuzzer's results will help the pentester gain 
+Absolutely. But AblitaFuzzer is intended to be used in conjunction with other tools to perform a complete pentest. Most 
+likely you should use AblitaFuzzer as a first pass against a target LLM to get a broad impression of what kind of filtering and 
+guardrails the target LLM is using. 
+
+The intention is that analyzing AblitaFuzzer's results will help the pentester gain 
 clarity about which specific attacks to attempt next, either manually through the chatbot's UI or by using a more 
-sophisticated tool like Garak or PyRIT.
+sophisticated tool like [Garak](https://github.com/leondz/garak) or [PyRIT](https://github.com/Azure/PyRIT).
 
 ### How does it work?
 
 #### TLDR 
 
-1. AblitaFuzzer sends a bunch of known-malicious seed prompts to the abliterated model and asks it to generate new, 
-   novel malicious prompts.
-2. AblitaFuzzer sends these new malicious prompts to the target LLM.
-3. AblitaFuzzer records the responses from the target LLM.
-4. The pentester optionally calls any of AblitaFuzzer's analysis functions to help them make sense of the responses. 
+1. `python3 ablitafuzzer.py test` - AblitaFuzzer tries to call the hardcoded API URLs of the (abliterated/uncensored) "attacker" LLM and the "target" LLM to make sure they are reachable and not returning errors.
+2. `python3 ablitafuzzer.py fuzz` 
+   1. AblitaFuzzer sends a bunch of known-malicious seed prompts to the abliterated model and asks it to generate new, novel malicious prompts.
+   2. AblitaFuzzer sends these new malicious prompts to the target LLM.
+   3. AblitaFuzzer records the responses from the target LLM in `results/results.json`.
+3. `python3 ablitafuzzer.py analyze`
+   1. AblitaFuzzer calls the abliterated LLM again, but this time to analyze the request/response pairs from the latest attack.
+   2. AblitaFuzzer writes the resulting analysis to a Markdown file.
 
 #### More detailed explanation of how it works
 
 AblitaFuzzer comes with a bunch of pre-written prompts that are known to be malicious. These prompts are stored 
-under the `inputs`. You can add your own prompts to this if you like. But the problem with known-malicious prompts 
+under the `inputs` directory. You can add your own prompts to this if you like. But the problem with known-malicious prompts 
 is that they are known and the best ones are quickly made obsolete as LLMs are patched, retrained, firewalled, 
 whatever, against these known-malicious prompts. AblitaFuzzer tries to solve this problem by generating new malicious 
 prompts before launching the attack against your target model. This way, the prompts are new and not known to 
@@ -73,28 +145,13 @@ AblitaFuzzer includes some simple analysis tools. But the verbose and non-determ
 you'll have to do a combination of programmatic and manual analysis to figure out which attacks succeeded and which 
 attacks were blocked. Results are stored as JSON files in the `results` directory.
 
-For now the best analysis is the LLM-based analyzer. To use it you should run these two commands, in this order:
-
-```bash
-python ablitafuzzer.py --analyze-classify
-python ablitafuzzer.py --analyze-with-llm
-```
-
-The first command will use simple keyword matching to classify the responses from the target model into categories 
-(e.g. "Agreement", "Refusal", "Confused", "Unknown", etc.). It will then strip out all the metadata and save just the 
-attack prompt, target model response, and keyword classification to a new JSON file called `results/classified_results.json`. 
-
-The second command will use your abliterated LLM to analyze the prompt/response pairs and determine if each individual 
-attack was successful or not. For now the results of this LLM-based analysis are printed to STDOUT. 
-
-You can also run other commands to perform additional analyses,
 
 ### Best practices for using AblitaFuzzer
 
 - **Proxy everything** through Burp Suite or ZAP or another proxy tool. This will enable you to see the actual requests 
   that are being sent to the target model's API, and allow you to modify them as needed. More importantly, this will 
   enable you to provide the exact prompt, response, and timestamp of anything that your client (the owner of the LLM 
-  you're attacking) might ask about.
+  you're attacking) might ask about. Just add the `--proxy` option when you run `fuzz` or `test`, e.g. `--proxy 127.0.0.1:8080`.
 - **Work iteratively**. Start with sending a small and diverse set of attack prompts. Analyze the successes, then 
   gradually increase the number of attack prompts as you become more comfortable.
 - **Don't get stuck on using AblitaFuzzer**. Switch to manual attacks or a more sophisticated tool like Garak or 
@@ -141,18 +198,24 @@ use and what seed-prompts you choose:
 To use AblitaFuzzer, simply run the `ablitafuzzer.py` file and specify the desired action using command-line arguments. 
 The available actions are:
 
-* `--version`: Show the version of AblitaFuzzer and exit.
-* `--setup`: Setup the fuzzer (not implemented yet).
-* `--test-call-abliterated-model`: Only test calling the abliterated model API and exit.
-* `--test-call-target-model`: Only test calling the target model API and exit.
-* `--fuzz`: Fuzz the target model. This is the main purpose of this tool.
-* `--analyze-classify`: Classify the results as 'Agreement', 'Refusal', 'Confused', or 'Unknown'.
-* `--analyze-with-llm`: Analyze the results by using the abliterated LLM.
-* `--analyze-toxicity`: Analyze the toxicity of the results.
-* `--analyze-hate-speech`: Analyze the hate speech of the results.
-* `--print-results`: Print the results to stdout (not implemented yet).
-* `--print-results-csv`: Print the results to stdout in CSV format (not implemented yet).
-* `--print-results-json`: This is just like running `cat results.json` (not implemented yet).
+```shell
+python3 ablitafuzzer.py 
+usage: ablitafuzzer.py [-h] [--version] {analyze,fuzz,test} ...
+
+AblitaFuzzer
+
+options:
+  -h, --help           show this help message and exit
+  --version            Show version and exit
+
+subcommands:
+  valid subcommands
+
+  {analyze,fuzz,test}  additional help
+    analyze            Analyze results from the most recent fuzzing attack
+    fuzz               Fuzz the target model
+    test               Test calling both APIs but do not fuzz
+```
 
 ## Requirements
 --------------
