@@ -634,6 +634,7 @@ def run_fuzz_and_analyze(args):
         "http": f"http://{proxy}",
         "https": f"http://{proxy}"
     } if proxy else {}
+    # TODO FIXME The proxy is always used, even without adding the --proxy flag with --fuzz
 
     # Set up the requests session
     session = requests.Session()
