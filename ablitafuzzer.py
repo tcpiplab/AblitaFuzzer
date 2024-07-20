@@ -421,7 +421,7 @@ def run_all_test_functions(args):
 
     if args.proxy:
 
-        print(f'{Fore.GREEN}[+] Testing through proxy at {args.proxy}')
+        print(f'{Fore.GREEN}[+] Testing through proxy at {args.proxy}...')
         os.environ['http_proxy'] = args.proxy
         os.environ['https_proxy'] = args.proxy
 
@@ -441,21 +441,21 @@ def run_all_test_functions(args):
 
     elif args.test_all:
 
-        print(f'{Fore.GREEN}[+] Testing calling the target model...')
-        test_call_target_model()
-
         print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
         test_call_abliterated_model()
+
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
+        test_call_target_model()
 
         exit()
 
     elif not args.test_call_target_model and not args.test_call_abliterated_model and not args.test_all:
 
-        print(f'{Fore.GREEN}[+] Testing calling the target model...')
-        test_call_target_model()
-
         print(f'{Fore.GREEN}[+] Testing calling the abliterated model...')
         test_call_abliterated_model()
+
+        print(f'{Fore.GREEN}[+] Testing calling the target model...')
+        test_call_target_model()
 
         exit()
 
@@ -527,7 +527,7 @@ def main():
     parser_test.add_argument('--test-call-abliterated-model', action='store_true', help='Test calling the abliterated model')
     parser_test.add_argument('--test-call-target-model', action='store_true', help='Test calling the target model')
     parser_test.add_argument('--test-all', action='store_true', help='Test all API calls')
-    parser_test.add_argument('--proxy', metavar='IP:PORT', default='127.0.0.1:8080', help='Specify the proxy to use')
+    parser_test.add_argument('--proxy', metavar='IP:PORT', help='Specify the proxy to use')
     parser_test.set_defaults(func=run_all_test_functions)
 
     # Parse the arguments supplied by the user at runtime
