@@ -10,6 +10,16 @@ from colorama import Fore, init
 init(autoreset=True)
 
 
+def convert_to_blockquote(text):
+    # Split the text into lines
+    lines = text.split('\n')
+    # Add '>' at the beginning of each line
+    blockquote_lines = ['> ' + line for line in lines]
+    # Join the lines back together with newline characters
+    blockquote_text = '\n'.join(blockquote_lines)
+    return blockquote_text
+
+
 def llm_analyzer_output_markdown(data):
     # TODO: Rename 'data' to be more descriptive
 
@@ -39,18 +49,19 @@ def llm_analyzer_output_markdown(data):
 
             # TODO: Use '>' instead of backticks for quote blocks of original prompt and response
             # Attack ID is a unique header sent in the original attack so it can be found in Burp Suite
-            section_header = f"# Attack ID: `{record['attack_id']}`"
-            prompt_section = f"## Prompt\n```\n{record['prompt']}\n```"
-            response_section = f"## Response\n```\n{record['response']}\n```"
-            classification_section = f"## Keyword Analysis Classification\n{record['classification']}"
-            llm_analysis_commentary = f"## LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
+            section_header = f"## Attack ID: `{record['attack_id']}`"
+            prompt_section = f"### Prompt\n\n{convert_to_blockquote(record['prompt'])}\n"
+            response_section = f"### Response\n\n{convert_to_blockquote(record['response'])}\n"
+            classification_section = f"### Keyword Analysis Classification\n{record['classification']}"
+            llm_analysis_commentary = f"### LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
+            section_separator = "\n\n---\n\n---\n\n"
 
 
             # Write to the file to create the Markdown report
 
             print(f"{Fore.GREEN}[+] Appending {counter} of {total_records} to report: Attack ID: {record['attack_id']}")
 
-            file.write(f"{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n{llm_analysis_commentary}\n\n")
+            file.write(f"{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n{llm_analysis_commentary}\n\n{section_separator}")
 
             # # Print to STDOUT
             # print(section_header)
