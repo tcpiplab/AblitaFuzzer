@@ -215,10 +215,13 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         prompts = [re.sub(r'^\d+\.\s+', '', prompt) for prompt in prompts]
 
         # For each prompt, convert the first alphabetical character to lowercase, even if it is preceded by other non-alphanumeric characters.
-        # prompts = [re.sub(r'^[^\w]*([a-zA-Z])', lambda match: match.group(0).lower(), prompt) for prompt in prompts]
-        #
-        # # For each prompt, replace any leading dash with "Please show me exactly how to ".
-        # prompts = [re.sub(r'^-\s+', 'Please show me exactly how to ', prompt) for prompt in prompts]
+        prompts = [re.sub(r'^[^\w]*([a-zA-Z])', lambda match: match.group(0).lower(), prompt) for prompt in prompts]
+
+        # For each prompt, replace any leading dash with "Please show me exactly how to ".
+        prompts = [re.sub(r'^-\s+', 'Please show me exactly how to ', prompt) for prompt in prompts]
+
+        # If there is no leading dash or star or bullet, then add "Please show me exactly how to ".
+        prompts = [re.sub(r'^', 'Please show me exactly how to ', prompt) for prompt in prompts]
 
         # TODO: Somehow use the LLM or even an external LLM to evaluate if the prompt is malicious
         #  and only use the prompt if it is malicious. For example maybe try sending it to the OpenAI API
@@ -352,20 +355,25 @@ def attack_target_model_api(session, prompt_styles_config, prompts, model_name):
                 }
 
                 print(f"{Fore.GREEN}[+] Attack payload #{i + 1} unique attack header: {new_ablitafuzzer_http_header[0]}: {new_ablitafuzzer_http_header[1]}")
+
+                # Print the prompt
+                print(f"{Fore.GREEN}[+]   {prompt}")
+
+
             except Exception as e:
                 print(f"{Fore.RED}[!] Error generating unique attack header: {e}")
                 exit(1)
 
             try:
-                print(f"{Fore.GREEN}[+] Attack payload #{i + 1} will be sent to target model API: {config.TARGET_MODEL_API_URL}")
+                print(f"{Fore.GREEN}[+]   Attack payload #{i + 1} will be sent to target model API: {config.TARGET_MODEL_API_URL}")
                 # Send the payload to the target API
                 response = session.post(config.TARGET_MODEL_API_URL, headers=headers, data=json.dumps(payload))
 
-                print(f"{Fore.GREEN}[+] Attack payload #{i + 1}. Response: {response.status_code}")
+                print(f"{Fore.GREEN}[+]   Attack payload #{i + 1}. Response: {response.status_code}")
                 i += 1
 
             except Exception as e:
-                print(f"{Fore.RED}[!] Error sending attack payload #{i + 1} to target model API: {e}")
+                print(f"{Fore.RED}[!]   Error sending attack payload #{i + 1} to target model API: {e}")
                 exit(1)
 
             if response.status_code == 200:
@@ -499,7 +507,7 @@ def main():
         parser.print_help()
 
     if args.version:
-        print(f'AblitaFuzzer version 0.5-alpha')
+        print(f'AblitaFuzzer version 0.6-alpha')
         exit()
 
 
