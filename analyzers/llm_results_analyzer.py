@@ -1,6 +1,7 @@
 import os
 import json
 from openai import OpenAI
+import configs.config as config
 import datetime
 from colorama import Fore, init
 
@@ -16,8 +17,8 @@ def llm_analyzer_output_markdown(data):
     os.makedirs('results', exist_ok=True)
 
     # Generate the filename based on the current date and time
-    current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
-    filename = f'results/Ablitafuzzer_Results_{current_time}.md'
+    current_time = datetime.datetime.now().strftime(config.FINAL_REPORT_FILENAME_TIMESTAMP_FORMAT)
+    filename = f'{config.FINAL_REPORT_FILENAME_PREFIX}{current_time}.md'
 
     total_records = len(data)
     counter = 0
@@ -36,6 +37,7 @@ def llm_analyzer_output_markdown(data):
         for index, record in enumerate(data, start=1):
             counter += 1
 
+            # TODO: Use '>' instead of backticks for quote blocks of original prompt and response
             # Attack ID is a unique header sent in the original attack so it can be found in Burp Suite
             section_header = f"# Attack ID: `{record['attack_id']}`"
             prompt_section = f"## Prompt\n```\n{record['prompt']}\n```"
@@ -44,7 +46,7 @@ def llm_analyzer_output_markdown(data):
             llm_analysis_commentary = f"## LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
 
 
-            # Write to the file
+            # Write to the file to create the Markdown report
 
             print(f"{Fore.GREEN}[+] Appending {counter} of {total_records} to report: Attack ID: {record['attack_id']}")
 
@@ -65,18 +67,18 @@ def llm_analyzer_output_markdown(data):
 def main():
 
     # TODO: This should be a relative path
-    # Set the CWD to '/Users/lukesheppard/Tools/AblitaFuzzer'
-    os.chdir('/Users/lukesheppard/Tools/AblitaFuzzer')
+    # Set the CWD to the root directory of the repo so that analysis and reporting doesn't fail
+    os.chdir(config.ABLITAFUZZER_REPO_ROOT_DIR)
 
     # TODO: Move this to a config file but only after the config refactor is complete
     # Initialize OpenAI client pointing to the local server
-    client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
+    client = OpenAI(base_url=config.ANALYZER_MODEL_API_URL, api_key=config.ANALYZER_MODEL_API_KEY)
 
     # TODO: Is it possible or necessary to reset the session between each API call?
     #  So that each API call is a new conversation with no previous history or context?
 
     # Read the JSON file containing the classified results
-    with open('results/classified_results.json') as file:
+    with open(config.TEMP_CLASSIFIED_RESULTS_FILE_PATH) as file:
         data = json.load(file)
 
     # Get the number of attack records that need to be analyzed
@@ -89,7 +91,7 @@ def main():
     # Function to evaluate each pair using LLM and update classification
     def evaluate_and_update_classification(record):
 
-        print(f"{Fore.GREEN}[+] Sending attack prompt/response pair {counter + 1} of {num_attack_records} to LLM for evaluation.")
+        print(f"{Fore.GREEN}[+] Sending attack prompt/response pair {counter + 1} of {num_attack_records} to analyzer LLM for evaluation.")
 
 
         # https://github.com/patrickrchao/JailbreakingLLMs/tree/main
@@ -112,7 +114,7 @@ def main():
         # TODO: Modify the system and/or user prompts below so that the resulting commentary is better and more concise.
         completion = client.chat.completions.create(
             # model="failspy/Phi-3-medium-4k-instruct-abliterated-v3-GGUF",
-            model="TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF",
+            model=config.ANALYZER_MODEL_NAME,
             # Label and separate the content below so that the judge can understand the difference between the prompt and the response.
             messages=[
                 {"role": "system",

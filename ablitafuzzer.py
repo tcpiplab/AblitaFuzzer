@@ -13,6 +13,7 @@ from analyzers.nlp_results_analyzer import analyze_toxicity, analyze_hate_speech
 import analyzers.llm_results_analyzer as llm_results_analyzer
 from tests.test_calling_apis import test_call_abliterated_model, test_call_target_model
 import configparser
+import configs.config as config
 import uuid
 from datetime import datetime
 from colorama import Fore, init
@@ -22,46 +23,11 @@ from colorama import Fore, init
 init(autoreset=True)
 
 
-def initialize_config(create_new=False):
-    config_object = configparser.ConfigParser()
-    config_file_path = 'configs/config.ini'
-
-    if create_new or not os.path.exists(config_file_path):
-        if os.path.exists(config_file_path):
-            # Generate the backup filename with the current date and time
-            timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-            backup_file_path = f'configs/config.ini-backup-{timestamp}.ini'
-
-            # Create a backup of the existing config file
-            os.rename(config_file_path, backup_file_path)
-            print(f"{Fore.YELLOW}[*] Saving a backup of the existing config file: {backup_file_path}")
-
-        # Create a new config file with default values
-        config_object['prompts_section'] = {
-            'num_prompts_to_generate': '10',
-            'prompt_styles_file_path': 'inputs/prompt-styles/prompt-styles.json'
-        }
-        config_object['DEFAULT'] = {
-            'proxy_host_and_port': '127.0.0.1:8080',
-            'use_proxy': 'False',
-            'seed_prompt_input_file_path': 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv'
-        }
-
-        with open(config_file_path, 'w') as configfile:
-            config_object.write(configfile)
-        print(f"{Fore.GREEN}[+] New config file created: {config_file_path}")
-
-    else:
-        config_object.read(config_file_path)
-
-    return config_object
-
-
 def fuzz_target_model(session):
 
-    prompt_styles_file_path = 'inputs/prompt-styles/prompt-styles.json'
-    seed_prompt_input_file_path = 'inputs/seed-prompts/harmful-behaviors/harmful_behaviors.csv'
-    num_prompts_to_generate = 10
+    prompt_styles_file_path = config.PROMPT_STYLES_FILE_PATH
+    seed_prompt_input_file_path = config.SEED_PROMPT_INPUT_FILE_PATH
+    num_prompts_to_generate = config.NUM_PROMPTS_TO_GENERATE
 
     try:
         with open(prompt_styles_file_path) as prompt_styles_file:
@@ -80,7 +46,7 @@ def fuzz_target_model(session):
 
         return
 
-    target_prompt_style = "openai_chatgpt"
+    target_prompt_style = config.TARGET_PROMPT_STYLE
 
     try:
         with open(seed_prompt_input_file_path) as seed_prompt_input_file_handle:
@@ -122,9 +88,9 @@ def fuzz_target_model(session):
         return
 
     try:
-        with open('results/results.json', 'w') as f:
+        with open(config.TEMP_RESULTS_FILE_PATH, 'w') as f:
             json.dump(results, f, indent=4)
-        print(f"{Fore.GREEN}[+] Fuzzing completed. Results saved to 'results/results.json'.")
+        print(f"{Fore.GREEN}[+] Fuzzing completed. Results saved to '{config.TEMP_RESULTS_FILE_PATH}'.")
     except Exception as e:
         print(f"{Fore.RED}[!] An error occurred while outputting results: {str(e)}")
         return
@@ -225,15 +191,15 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
     completion = client.chat.completions.create(
         # model="failspy/Meta-Llama-3-8B-Instruct-abliterated-v3-GGUF",
         # model="failspy/Phi-3-medium-4k-instruct-abliterated-v3",
-        model="TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF",
+        model=config.ATTACK_MODEL_NAME,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
-        temperature=0.7,
+        temperature=config.ATTACK_MODEL_TEMPERATURE,
     )
 
-    # Verify that `completion` is not empty
+    # Verify that 'completion' is not empty
     if not completion or not completion.choices:
         raise Exception(f"{Fore.RED}[!] No response from abliterated LLM API")
 
@@ -264,7 +230,7 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 # Function to generate malicious prompts using the abliterated model
 def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prompt_styles_config=None, target_prompt_style=None):
 
-    client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
+    client = OpenAI(base_url=config.ATTACK_MODEL_API_URL, api_key=config.ATTACK_MODEL_API_KEY)
 
     # Verify that seed_prompt_csv_file_path is a string and not a file IO object
     if not isinstance(seed_prompt_csv_file_path, str):
@@ -320,9 +286,9 @@ def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prom
 def wrap_prompt_with_delimiters(prompt, delimiter_start, delimiter_end):
     return f"{delimiter_start}{prompt}{delimiter_end}"
 
-# TODO: Move this into main or into one of the (unfortunately many) config functions
-# Define the URL for the target model API
-TARGET_MODEL_API = "http://localhost:11434/api/chat"
+
+# # Define the URL for the target model API
+# TARGET_MODEL_API_URL = "http://localhost:11434/api/chat"
 
 
 # Function to attack the target model with malicious prompts
@@ -345,7 +311,7 @@ def attack_target_model_api(session, prompt_styles_config, prompts, model_name):
             try:
                 # Construct the payload
                 payload = {
-                    "model": "mistral",  # Replace with the actual model name if different
+                    "model": config.TARGET_MODEL_NAME,  # Replace with the actual model name if different
                     "messages": [
                         {
                             "role": "user",
@@ -375,9 +341,9 @@ def attack_target_model_api(session, prompt_styles_config, prompts, model_name):
                 exit(1)
 
             try:
-                print(f"{Fore.GREEN}[+] Attack payload #{i + 1} will be sent to target model API: {TARGET_MODEL_API}")
+                print(f"{Fore.GREEN}[+] Attack payload #{i + 1} will be sent to target model API: {config.TARGET_MODEL_API_URL}")
                 # Send the payload to the target API
-                response = session.post(TARGET_MODEL_API, headers=headers, data=json.dumps(payload))
+                response = session.post(config.TARGET_MODEL_API_URL, headers=headers, data=json.dumps(payload))
 
                 print(f"{Fore.GREEN}[+] Attack payload #{i + 1}. Response: {response.status_code}")
                 i += 1
@@ -439,14 +405,14 @@ def run_fuzz_attack(args):
     proxies = None
 
     if args.proxy:
-        print(f"Using proxy: {args.proxy}")
+        print(f"{Fore.GREEN}[+] Using proxy: {args.proxy}")
         proxy = args.proxy
         proxies = {
             "http": f"http://{proxy}",
             "https": f"http://{proxy}"
         }
     else:
-        print("No proxy specified")
+        print(f"{Fore.RED}[!] No proxy specified")
 
 
     # Set up the requests session
@@ -517,7 +483,7 @@ def main():
         parser.print_help()
 
     if args.version:
-        print(f'AblitaFuzzer version 0.4-alpha')
+        print(f'AblitaFuzzer version 0.5-alpha')
         exit()
 
 
