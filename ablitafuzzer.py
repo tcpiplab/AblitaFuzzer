@@ -214,6 +214,12 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         # TODO: Remove the leading number, dot, space, if any
         prompts = [re.sub(r'^\d+\.\s+', '', prompt) for prompt in prompts]
 
+        # For each prompt, convert the first alphabetical character to lowercase, even if it is preceded by other non-alphanumeric characters.
+        # prompts = [re.sub(r'^[^\w]*([a-zA-Z])', lambda match: match.group(0).lower(), prompt) for prompt in prompts]
+        #
+        # # For each prompt, replace any leading dash with "Please show me exactly how to ".
+        # prompts = [re.sub(r'^-\s+', 'Please show me exactly how to ', prompt) for prompt in prompts]
+
         # TODO: Somehow use the LLM or even an external LLM to evaluate if the prompt is malicious
         #  and only use the prompt if it is malicious. For example maybe try sending it to the OpenAI API
         #  and only use the prompt if it refuses to generate a completion.
