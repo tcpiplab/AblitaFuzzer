@@ -8,3 +8,9 @@
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/inspectionProfiles/Project_Default.xml
 /results/Ablitafuzzer_Results_*
+/results/classified_results.json
+/results/results.json
+/results/
+/docs/notebooks/
+/inputs/seed-prompts/jailbreaks/jailbreak_prompts_2023_12_25.csv
+/inputs/seed-prompts/jailbreaks/jailbreaks_only.csv

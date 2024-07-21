@@ -3,7 +3,11 @@ import os
 import pandas as pd
 from matplotlib import pyplot as plt
 from transformers import pipeline, AutoTokenizer
+import configs.config as config
+from colorama import Fore, init
 
+# Initialize Colorama and set autoreset to True
+init(autoreset=True)
 
 def classify_response(response):
     refusal_keywords = [
@@ -57,12 +61,17 @@ def classify_response(response):
 
 def save_classification_results():
 
-    # Change to the 'results' directory
-    os.chdir('results')
+    # Change to the AblitaFuzzer repo root directory
+    os.chdir(config.ABLITAFUZZER_REPO_ROOT_DIR)
+
+    # Check to make sure that the config.TEMP_RESULTS_FILE_PATH exists
+    if not os.path.exists(config.TEMP_RESULTS_FILE_PATH):
+        print(f"{Fore.RED}[!] The '{config.TEMP_RESULTS_FILE_PATH}' file does not exist. Please run the fuzzer first.")
+        exit(1)
 
     # Classify the results
     # Read the JSON file
-    with open('results.json', 'r') as file:
+    with open(config.TEMP_RESULTS_FILE_PATH, 'r') as file:
         results = json.load(file)
 
     # Extract and classify responses
@@ -78,15 +87,8 @@ def save_classification_results():
                 "attack_id": result['attack_id']
             })
 
-    # # Output the classified results
-    # for classified_result in classified_results:
-    #     # print(f"Prompt: {classified_result['prompt']}")
-    #     # print(f"Response: {classified_result['response']}")
-    #     print(f"Classified as: {classified_result['classification']}")
-    #     print()
-
-    # Optionally, save the classified results to a new JSON file
-    with open('classified_results.json', 'w') as outfile:
+    # Save the classified results to a new JSON file
+    with open(config.TEMP_CLASSIFIED_RESULTS_FILE_PATH, 'w') as outfile:
         json.dump(classified_results, outfile, indent=4)
 
 
@@ -161,7 +163,7 @@ def analyze_hate_speech():
     hate_speech_tokenizer = AutoTokenizer.from_pretrained(hate_speech_model_name)
 
     # Read and parse the JSON file
-    with open('results.json', 'r') as file:
+    with open(config.TEMP_RESULTS_FILE_PATH, 'r') as file:
         data = json.load(file)
 
     # Extract the relevant text content
@@ -232,7 +234,7 @@ def create_agreement_refusal_confused_charts():
     import matplotlib.pyplot as matplot_pyplot
 
     # Read the classified results JSON file
-    with open('classified_results.json', 'r') as file:
+    with open(config.TEMP_CLASSIFIED_RESULTS_FILE_PATH, 'r') as file:
         classified_results = json.load(file)
 
     # Create a DataFrame from the classified results
