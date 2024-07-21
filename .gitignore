@@ -8,3 +8,5 @@
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/inspectionProfiles/Project_Default.xml
 /results/Ablitafuzzer_Results_*
+/results/
+/docs/notebooks/
