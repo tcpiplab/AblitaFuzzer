@@ -4,6 +4,8 @@ from openai import OpenAI
 import configs.config as config
 import datetime
 from colorama import Fore, init
+# from convert_md_to_html import convert_markdown_to_html_with_collapsible_sections
+# from analyzers.convert_md_to_html import convert_markdown_to_html_with_collapsible_sections
 
 # TODO: Move this to main() and test to see if it still works correctly
 # Initialize colorama and set autoreset to True
@@ -73,6 +75,8 @@ def llm_analyzer_output_markdown(data):
     # TODO: Add appendix to report for hate speech and toxicity classifications
 
     print(f"{Fore.GREEN}[+] Results have been saved to {filename}")
+
+    return filename
 
 
 def main():
@@ -155,6 +159,16 @@ def main():
         counter += 1
 
     llm_analyzer_output_markdown(data)
+
+    # md_filename = llm_analyzer_output_markdown(data)
+    # # Convert the Markdown report to HTML
+    # html_with_collapsible_sections = convert_markdown_to_html_with_collapsible_sections(md_filename)
+    #
+    # # html_with_collapsible_sections = convert_markdown_to_html_with_collapsible_sections(markdown_filename)
+    #
+    # # Write to an HTML file
+    # with open('output.html', 'w') as file:
+    #     file.write(html_with_collapsible_sections)
 
 # If this file was called by name, run it as a callable module
 if __name__ == "__main__":
