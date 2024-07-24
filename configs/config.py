@@ -2,7 +2,7 @@ import os
 
 ## Target LLM API Settings
 TARGET_MODEL_API_URL = "http://localhost:11434/api/chat"
-TARGET_MODEL_NAME = "mistral"
+TARGET_MODEL_NAME = "llama3.1"
 
 ## Prompt Generation Settings
 TARGET_PROMPT_STYLE = "openai_chatgpt"
@@ -13,14 +13,14 @@ NUM_PROMPTS_TO_GENERATE = 10
 ## Abliterated/Uncensored Attack LLM API Settings
 ATTACK_MODEL_API_URL = "http://localhost:8181/v1"
 ATTACK_MODEL_API_KEY = "lm-studio"
-ATTACK_MODEL_NAME = "TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF"
+ATTACK_MODEL_NAME = "TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf"
 ATTACK_MODEL_TEMPERATURE = 0.7
 
 ## Analyzer LLM API Settings
 # Yes, for now we are using the same model for both attack and analysis
 ANALYZER_MODEL_API_URL = "http://localhost:8181/v1"
 ANALYZER_MODEL_API_KEY = "lm-studio"
-ANALYZER_MODEL_NAME = "TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF"
+ANALYZER_MODEL_NAME = "TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf"
 
 ## Analysis and Reporting Settings
 # These TEMP files will get overwritten each time an attack and analysis is run, respectively
