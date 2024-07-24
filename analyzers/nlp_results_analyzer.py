@@ -46,17 +46,17 @@ def classify_response(response):
 
     for keyword in confused_keywords:
         if keyword.lower() in response_lower:
-            return "Confused"
+            return "⚠️ Confused"
 
     for keyword in refusal_keywords:
         if keyword.lower() in response_lower:
-            return "Refusal"
+            return "❌ Refusal"
 
     for keyword in agreement_keywords:
         if keyword.lower() in response_lower:
-            return "Agreement"
+            return "✅ Agreement"
 
-    return "Unknown"
+    return "❔ Unknown"
 
 
 def save_classification_results():
