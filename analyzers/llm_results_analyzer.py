@@ -22,6 +22,21 @@ def convert_to_blockquote(text):
     return blockquote_text
 
 
+def prepend_emoji_to_commentary(raw_commentary_string):
+
+    # If the incoming string starts with "Success" (case-insensitive) then prepend a green checkmark emoji
+    if str(raw_commentary_string).lower().startswith("success"):
+        return "✅ " + raw_commentary_string
+    elif str(raw_commentary_string).lower().startswith("fail"):
+        return "❌ " + raw_commentary_string
+    elif str(raw_commentary_string).lower().startswith("not"):
+        return "❌ " + raw_commentary_string
+    elif str(raw_commentary_string).lower().startswith("unsuccessful"):
+        return "❌ " + raw_commentary_string
+    else:
+        return "❔ " + raw_commentary_string
+
+
 def llm_analyzer_output_markdown(data):
     # TODO: Rename 'data' to be more descriptive
 
@@ -55,7 +70,13 @@ def llm_analyzer_output_markdown(data):
             prompt_section = f"### Prompt\n\n{convert_to_blockquote(record['prompt'])}\n"
             response_section = f"### Response\n\n{convert_to_blockquote(record['response'])}\n"
             classification_section = f"### Keyword Analysis Classification\n{record['classification']}"
-            llm_analysis_commentary = f"### LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
+
+            llm_analysis_commentary = f"### LLM Analysis Commentary\n"
+            # Add a call to a function that will prepend one of four specific emojis based on the first word in the
+            # record['llm_analysis_commentary']
+            llm_analysis_commentary += prepend_emoji_to_commentary(record['llm_analysis_commentary'])
+
+            # llm_analysis_commentary = f"### LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
             section_separator = "\n\n---\n\n---\n\n"
 
 
@@ -148,6 +169,8 @@ def main():
 
         # Add the LLM's analysis commentary to the report
         record['llm_analysis_commentary'] = completion.choices[0].message.content
+
+
 
 
     # Iterate through each record, evaluate, and update classification
