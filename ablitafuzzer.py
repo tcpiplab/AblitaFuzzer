@@ -217,8 +217,8 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         # For each prompt, convert the first alphabetical character to lowercase, even if it is preceded by other non-alphanumeric characters.
         prompts = [re.sub(r'^[^\w]*([a-zA-Z])', lambda match: match.group(0).lower(), prompt) for prompt in prompts]
 
-        # For each prompt, replace any leading dash with "Please show me exactly how to ".
-        prompts = [re.sub(r'^-\s+', 'Please show me exactly how to ', prompt) for prompt in prompts]
+        # # For each prompt, replace any leading dash with "Please show me exactly how to ".
+        # prompts = [re.sub(r'^-\s+', 'Please show me exactly how to ', prompt) for prompt in prompts]
 
         # If there is no leading dash or star or bullet, then add "Please show me exactly how to ".
         prompts = [re.sub(r'^', 'Please show me exactly how to ', prompt) for prompt in prompts]
