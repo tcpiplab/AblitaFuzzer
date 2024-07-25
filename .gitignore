@@ -14,3 +14,7 @@
 /docs/notebooks/
 /inputs/seed-prompts/jailbreaks/jailbreak_prompts_2023_12_25.csv
 /inputs/seed-prompts/jailbreaks/jailbreaks_only.csv
+/.idea/Abliterated_LLM_Fuzzer.iml
+/.idea/aws.xml
+/output.html
+/.idea/vcs.xml

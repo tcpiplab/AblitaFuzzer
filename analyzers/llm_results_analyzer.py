@@ -15,11 +15,26 @@ init(autoreset=True)
 def convert_to_blockquote(text):
     # Split the text into lines
     lines = text.split('\n')
-    # Add '>' at the beginning of each line
-    blockquote_lines = ['> ' + line for line in lines]
+    # Add '>' at the beginning of each line and italicize with the underscore character on each end
+    blockquote_lines = ['> _' + line + '_' for line in lines]
     # Join the lines back together with newline characters
     blockquote_text = '\n'.join(blockquote_lines)
     return blockquote_text
+
+
+def prepend_emoji_to_commentary(raw_commentary_string):
+
+    # If the incoming string starts with "Success" (case-insensitive) then prepend a green checkmark emoji
+    if str(raw_commentary_string).lower().startswith("success"):
+        return "✅ " + raw_commentary_string
+    elif str(raw_commentary_string).lower().startswith("fail"):
+        return "❌ " + raw_commentary_string
+    elif str(raw_commentary_string).lower().startswith("not"):
+        return "❌ " + raw_commentary_string
+    elif str(raw_commentary_string).lower().startswith("unsuccessful"):
+        return "❌ " + raw_commentary_string
+    else:
+        return "❔ " + raw_commentary_string
 
 
 def llm_analyzer_output_markdown(data):
@@ -49,13 +64,19 @@ def llm_analyzer_output_markdown(data):
         for index, record in enumerate(data, start=1):
             counter += 1
 
-            # TODO: Use '>' instead of backticks for quote blocks of original prompt and response
+            attack_index_number = f"## Prompt/Response/Analysis #{counter}\n"
             # Attack ID is a unique header sent in the original attack so it can be found in Burp Suite
-            section_header = f"## Attack ID: `{record['attack_id']}`"
+            section_header = f"**Unique Header:** `Attack ID: {record['attack_id']}`\n"
             prompt_section = f"### Prompt\n\n{convert_to_blockquote(record['prompt'])}\n"
             response_section = f"### Response\n\n{convert_to_blockquote(record['response'])}\n"
-            classification_section = f"### Keyword Analysis Classification\n{record['classification']}"
-            llm_analysis_commentary = f"### LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
+            classification_section = f"##### Keyword Analysis Classification\n{record['classification']}"
+
+            llm_analysis_commentary = f"##### LLM Analysis Commentary\n"
+            # Add a call to a function that will prepend one of four specific emojis based on the first word in the
+            # record['llm_analysis_commentary']
+            llm_analysis_commentary += prepend_emoji_to_commentary(record['llm_analysis_commentary'])
+
+            # llm_analysis_commentary = f"### LLM Analysis Commentary\n{record['llm_analysis_commentary']}"
             section_separator = "\n\n---\n\n---\n\n"
 
 
@@ -63,7 +84,7 @@ def llm_analyzer_output_markdown(data):
 
             print(f"{Fore.GREEN}[+] Appending {counter} of {total_records} to report: Attack ID: {record['attack_id']}")
 
-            file.write(f"{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n{llm_analysis_commentary}\n\n{section_separator}")
+            file.write(f"{attack_index_number}{section_header}\n\n{prompt_section}\n\n{response_section}\n\n{classification_section}\n\n{llm_analysis_commentary}\n\n{section_separator}")
 
             # # Print to STDOUT
             # print(section_header)
@@ -148,6 +169,8 @@ def main():
 
         # Add the LLM's analysis commentary to the report
         record['llm_analysis_commentary'] = completion.choices[0].message.content
+
+
 
 
     # Iterate through each record, evaluate, and update classification
