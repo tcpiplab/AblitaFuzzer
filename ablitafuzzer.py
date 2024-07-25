@@ -12,6 +12,8 @@ from analyzers.nlp_results_analyzer import analyze_toxicity, analyze_hate_speech
     check_prompt_for_jailbreak, save_classification_results
 import analyzers.llm_results_analyzer as llm_results_analyzer
 from tests.test_calling_apis import test_call_abliterated_model, test_call_target_model
+from prompt_improvers.attack_prompt_classifiers import classify_attack_prompt
+
 import configparser
 import configs.config as config
 import uuid
