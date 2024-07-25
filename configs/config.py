@@ -2,7 +2,7 @@ import os
 
 ## Target LLM API Settings
 TARGET_MODEL_API_URL = "http://localhost:11434/api/chat"
-TARGET_MODEL_NAME = "llama3.1"
+TARGET_MODEL_NAME = "gemma:2b"
 
 ## Prompt Generation Settings
 TARGET_PROMPT_STYLE = "openai_chatgpt"
