@@ -225,9 +225,23 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         # If there is no leading dash or star or bullet, then add "Please show me exactly how to ".
         prompts = [re.sub(r'^', 'Please show me exactly how to ', prompt) for prompt in prompts]
 
-        # TODO: Somehow use the LLM or even an external LLM to evaluate if the prompt is malicious
-        #  and only use the prompt if it is malicious. For example maybe try sending it to the OpenAI API
-        #  and only use the prompt if it refuses to generate a completion.
+        # Only use the prompt if it gets classified as malicious.
+        for prompt in prompts:
+
+            # Get the boolean value and the toxicity score from the classifier
+            is_malicious, toxicity_score = classify_attack_prompt(prompt)
+
+            # If it does not come back as "True"
+            if not is_malicious:
+
+                # remove it from the list of prompts
+                prompts.remove(prompt)
+
+                print(f"{Fore.YELLOW}[*] Removing candidate prompt. Not malicious enough:{Fore.RESET}\n    {prompt}")
+
+            else:
+
+                print(f"{Fore.GREEN}[+] Keeping candidate prompt with toxicity score {Fore.LIGHTGREEN_EX}{toxicity_score}:{Fore.RESET}\n    {prompt}")
 
 
         # Truncate the list of prompts to num_prompts
