@@ -259,7 +259,7 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 
             # Print the highest toxicity score
             print(f"{Fore.GREEN}[+] Highest toxicity score:{Fore.LIGHTGREEN_EX} {max(list_of_toxicity_scores)}{Fore.RESET}")
-
+            # TODO: Hardcode a minimum toxicity score and filter on that, above
 
         # Truncate the list of prompts to num_prompts
         prompts = prompts[0:int(num_prompts)]
