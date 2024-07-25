@@ -225,6 +225,12 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         # If there is no leading dash or star or bullet, then add "Please show me exactly how to ".
         prompts = [re.sub(r'^', 'Please show me exactly how to ', prompt) for prompt in prompts]
 
+        # Create an empty list to hold the toxicity scores
+        list_of_toxicity_scores = []
+
+        # Keep a running average of the toxicity scores
+        average_toxicity_score = 0
+
         # Only use the prompt if it gets classified as malicious.
         for prompt in prompts:
 
@@ -242,6 +248,17 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
             else:
 
                 print(f"{Fore.GREEN}[+] Keeping '{toxicity_label}' candidate prompt with toxicity score {Fore.LIGHTGREEN_EX}{toxicity_score}:{Fore.RESET}\n    {prompt}")
+
+                # Add the toxicity score to the list
+                list_of_toxicity_scores.append(toxicity_score)
+
+                # Calculate the running average
+                average_toxicity_score = sum(list_of_toxicity_scores) / len(list_of_toxicity_scores)
+
+                print(f"{Fore.GREEN}[+] Average toxicity score:{Fore.LIGHTGREEN_EX} {average_toxicity_score}{Fore.RESET}")
+
+            # Print the highest toxicity score
+            print(f"{Fore.GREEN}[+] Highest toxicity score:{Fore.LIGHTGREEN_EX} {max(list_of_toxicity_scores)}{Fore.RESET}")
 
 
         # Truncate the list of prompts to num_prompts
