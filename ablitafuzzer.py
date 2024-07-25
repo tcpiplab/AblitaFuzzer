@@ -229,7 +229,7 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         for prompt in prompts:
 
             # Get the boolean value and the toxicity score from the classifier
-            is_malicious, toxicity_score = classify_attack_prompt(prompt)
+            is_malicious, toxicity_score, toxicity_label = classify_attack_prompt(prompt)
 
             # If it does not come back as "True"
             if not is_malicious:
@@ -241,7 +241,7 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 
             else:
 
-                print(f"{Fore.GREEN}[+] Keeping candidate prompt with toxicity score {Fore.LIGHTGREEN_EX}{toxicity_score}:{Fore.RESET}\n    {prompt}")
+                print(f"{Fore.GREEN}[+] Keeping '{toxicity_label}' candidate prompt with toxicity score {Fore.LIGHTGREEN_EX}{toxicity_score}:{Fore.RESET}\n    {prompt}")
 
 
         # Truncate the list of prompts to num_prompts

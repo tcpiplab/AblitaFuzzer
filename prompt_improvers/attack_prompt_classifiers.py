@@ -22,7 +22,7 @@ def classify_attack_prompt(attack_prompt_candidate):
                                      'identity_hate']  # Adjust based on model labels
     maliciousness_score = score if is_malicious else 1 - score
 
-    return is_malicious, maliciousness_score
+    return is_malicious, maliciousness_score, label
 
 
 # # Example usage
