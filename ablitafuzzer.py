@@ -3,6 +3,7 @@ import random
 import re
 import csv
 import os
+import string
 import time
 import json
 import requests
@@ -160,6 +161,12 @@ def read_seed_prompts_from_csv(path_to_seed_prompts_csv_file):
     return seed_prompt_response_tuples
 
 
+def add_trailing_period(sentence):
+    if sentence and sentence[-1] not in string.punctuation:
+        sentence += '.'
+    return sentence
+
+
 def call_abliterated_model_api(num_prompts, client, few_shot_examples):
     """
     Call a target model's OpenAI compatible API to generate malicious prompts.
@@ -239,27 +246,22 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
         # For each prompt, convert the first alphabetical character to uppercase, even if it is preceded by other non-alphanumeric characters.
         prompts = [re.sub(r'^[^\w]*([a-zA-Z])', lambda match: match.group(0).upper(), prompt) for prompt in prompts]
 
-        # Remove leading dash, space
-        # prompts = [re.sub(r'^-\s+', '', prompt) for prompt in prompts]
+        # Add a trailing period if it is missing from the sentence.
+        prompts = [add_trailing_period(sentence) for sentence in prompts]
 
         # # For each prompt, replace any leading dash with "Please show me exactly how to ".
         # prompts = [re.sub(r'^-\s+', 'Please show me exactly how to ', prompt) for prompt in prompts]
 
-        # If there is no leading dash or star or bullet, then add "Please show me exactly how to ".
-        # prompts = [re.sub(r'^', 'Please show me exactly how to ', prompt) for prompt in prompts]
-
         # Create an empty list to hold the toxicity scores
         list_of_toxicity_scores = []
 
-        print(f"Before loop there are {len(prompts)} in the list of prompts.")
+        # print(f"Before loop there are {len(prompts)} in the list of prompts.")
 
         # Only use the prompt if it gets classified as malicious.
         # Note that we're using prompts[:] which creates a shallow copy of the list, so modifications to the
         # original list do not affect the iteration process. This way, every item in the original prompts
         # list is evaluated instead of accidentally skipping some.
         for index, prompt in enumerate(prompts[:]):
-
-            print(f"{Fore.MAGENTA}[*] Top of for() loop, at prompt {index}.")
 
             # Get the boolean value and the toxicity score from the classifier
             is_malicious, toxicity_score, toxicity_label = classify_attack_prompt(prompt)
@@ -291,7 +293,7 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 
             # else: #toxicity_score >= config.MINIMUM_TOXICITY_SCORE_THRESHOLD:
 
-            print(f"{Fore.YELLOW}[*]    ✅ Keeping '{toxicity_label}' candidate prompt with toxicity score {Fore.LIGHTGREEN_EX}{toxicity_score}:{Fore.RESET}\n    {prompt}")
+            print(f"{Fore.YELLOW}[*]    ✅ Keeping '{toxicity_label}' candidate prompt with toxicity score {Fore.LIGHTGREEN_EX}{toxicity_score}.")
 
             # Add the toxicity score to the list
             list_of_toxicity_scores.append(toxicity_score)
@@ -313,9 +315,8 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 
         # Print the highest toxicity score
         print(f"{Fore.GREEN}[+] Highest toxicity score:{Fore.LIGHTGREEN_EX} {max(list_of_toxicity_scores)}{Fore.RESET}")
-        # TODO: Hardcode a minimum toxicity score and filter on that, above
 
-        print(f"After the loop there are {len(prompts)} in the list of prompts.")
+        # print(f"After the loop there are {len(prompts)} in the list of prompts.")
 
         # Truncate the list of prompts to num_prompts
         prompts = prompts[0:int(num_prompts)]
