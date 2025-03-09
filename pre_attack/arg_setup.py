@@ -1,13 +1,8 @@
 import argparse
+
 from post_attack.analyzers import run_all_analyzers
 from during_attack.run_fuzz_attack import run_fuzz_attack
 from tests.run_all_test_functions import run_all_test_functions
-from colorama import init
-
-# TODO: Move this to main() and test if it still works correctly
-# Initialize colorama and set autoreset to True
-init(autoreset=True)
-
 
 def setup_arguments():
     parser = argparse.ArgumentParser(description='AblitaFuzzer')
@@ -29,20 +24,3 @@ def setup_arguments():
     parser_test.set_defaults(func=run_all_test_functions)
 
     return parser
-
-
-def main():
-    parser = setup_arguments()
-    args = parser.parse_args()
-
-    if hasattr(args, 'func'):
-        args.func(args)
-    else:
-        parser.print_help()
-
-    if args.version:
-        print(f'AblitaFuzzer version 0.7-alpha')
-        exit()
-
-if __name__ == '__main__':
-    main()

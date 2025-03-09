@@ -29,3 +29,8 @@ def wrap_prompt_with_delimiters(prompt, delimiter_start, delimiter_end):
         str: The prompt wrapped with the specified delimiters.
     """
     return f"{delimiter_start}{prompt}{delimiter_end}"
+
+
+def vprint(args, *print_args, **kwargs):
+    if args.verbose:
+        print(*print_args, **kwargs)
