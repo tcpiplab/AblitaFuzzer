@@ -1,24 +1,20 @@
 import argparse
 import random
 import re
-import csv
 import os
-import string
 import time
 import json
 import requests
 from openai import OpenAI
-from analyzers.nlp_results_analyzer import analyze_toxicity, analyze_hate_speech, \
-    create_agreement_refusal_confused_charts, \
-    check_prompt_for_jailbreak, save_classification_results
+from analyzers.nlp_results_analyzer import create_agreement_refusal_confused_charts, \
+    save_classification_results
 import analyzers.llm_results_analyzer as llm_results_analyzer
+from utilities.file_utilities import read_seed_prompts_from_csv
+from utilities.text_utilities import add_trailing_period, wrap_prompt_with_delimiters
 from tests.test_calling_apis import test_call_abliterated_model, test_call_target_model
-from prompt_improvers.attack_prompt_classifiers import classify_attack_prompt
+from utilities.attack_prompt_classifiers import classify_attack_prompt
 
-import configparser
 import configs.config as config
-import uuid
-from datetime import datetime
 from colorama import Fore, init
 
 # TODO: Move this to main() and test if it still works correctly
@@ -97,74 +93,6 @@ def fuzz_target_model(args, session):
     except Exception as e:
         print(f"{Fore.RED}[!] An error occurred while outputting results: {str(e)}")
         return
-
-
-# Function to read malicious prompts from CSV
-def read_seed_prompts_from_csv(path_to_seed_prompts_csv_file):
-
-    seed_prompt_response_tuples = []
-
-    print(f"{Fore.GREEN}[+] Will try reading seed prompts/responses from {path_to_seed_prompts_csv_file}...")
-
-    try:
-        with open(path_to_seed_prompts_csv_file, 'r') as file:
-            reader = csv.reader(file)
-            num_rows = sum(1 for _ in reader)
-
-            file.seek(0)  # Reset file pointer
-
-            print(f"{Fore.GREEN}[+] Reading seed prompts/responses from {path_to_seed_prompts_csv_file}...")
-
-            print(f"{Fore.GREEN}[+] Appending {num_rows} seed prompts/responses to seed_prompt_response_tuples list", end='')
-
-            line_num = 0  # Track line number manually
-
-            for row in reader:
-                line_num += 1
-
-                if not row:
-                    print(f"{Fore.RED}[!] Error: Seed prompts CSV file contains empty rows.")
-                    continue
-
-                if len(row) < 1:
-                    print(f"{Fore.RED}[!] Error: Seed prompts CSV file contains rows with no columns.")
-                    continue
-
-                if line_num == 1:
-                    continue
-
-                # TODO: Append and propagate the response also. It will require pairs of prompts and responses.
-                # Put prompt and response pairs into a tuple
-                seed_prompt_response_tuples.append((row[0], row[1]))  # First column is prompt and second column is response
-
-
-                # Append seed attack prompt to list, not the response though
-                # TODO: This is an experimental bugfix, need to add support for response propagation
-                # seed_prompt_response_tuples.append(row[0])
-
-                # Print progress with dots
-                print(f"{Fore.GREEN}.", end="")
-
-            print(f'{Fore.GREEN}\n[+] Finished creating seed attack prompt/response list.')
-
-            if len(seed_prompt_response_tuples) > 0:
-                print(f"{Fore.GREEN}[+] Seed attack prompt/response list successfully created with {len(seed_prompt_response_tuples)} prompts.")
-            else:
-                print(f"{Fore.RED}[!] Seed attack prompt/response list is empty, please check the CSV file and try again.")
-
-    except FileNotFoundError:
-        print(f"{Fore.RED}[!] Error: Seed attack prompt/response CSV file '{path_to_seed_prompts_csv_file}' not found.")
-    except Exception as e:
-        print(f"{Fore.RED}[!] Error reading seed attack prompts/responses from CSV file: {e}")
-
-    # Return the seed prompts
-    return seed_prompt_response_tuples
-
-
-def add_trailing_period(sentence):
-    if sentence and sentence[-1] not in string.punctuation:
-        sentence += '.'
-    return sentence
 
 
 def call_abliterated_model_api(num_prompts, client, few_shot_examples):
@@ -391,9 +319,7 @@ def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prom
     return call_abliterated_model_api(num_prompts, client, few_shot_seed_prompt_examples)
 
 
-# Function to wrap prompts with delimiters
-def wrap_prompt_with_delimiters(prompt, delimiter_start, delimiter_end):
-    return f"{delimiter_start}{prompt}{delimiter_end}"
+
 
 
 # # Define the URL for the target model API
@@ -492,10 +418,10 @@ def attack_target_model_api(args, session, prompt_styles_config, prompts, model_
     return results
 
 
-def generate_unique_http_header():
-    unique_id = f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}-{uuid.uuid4()}"
-    ablitafuzzer_http_header = ('AblitaFuzzer-Attack-ID', unique_id)
-    return ablitafuzzer_http_header
+# def generate_unique_http_header():
+#     unique_id = f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}-{uuid.uuid4()}"
+#     ablitafuzzer_http_header = ('AblitaFuzzer-Attack-ID', unique_id)
+#     return ablitafuzzer_http_header
 
 
 def run_all_test_functions(args):
