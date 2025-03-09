@@ -26,7 +26,7 @@ from colorama import Fore, init
 init(autoreset=True)
 
 
-def fuzz_target_model(session):
+def fuzz_target_model(args, session):
 
     prompt_styles_file_path = config.PROMPT_STYLES_FILE_PATH
     seed_prompt_input_file_path = config.SEED_PROMPT_INPUT_FILE_PATH
@@ -85,7 +85,7 @@ def fuzz_target_model(session):
 
     try:
         print(f"{Fore.GREEN}[+] Attacking target model with malicious prompts...")
-        results = attack_target_model_api(session, prompt_styles_config, malicious_prompts, target_prompt_style)
+        results = attack_target_model_api(args, session, prompt_styles_config, malicious_prompts, target_prompt_style)
     except Exception as e:
         print(f"{Fore.RED}[!] An error occurred while attacking the target model: {str(e)}")
         return
@@ -401,7 +401,7 @@ def wrap_prompt_with_delimiters(prompt, delimiter_start, delimiter_end):
 
 
 # Function to attack the target model with malicious prompts
-def attack_target_model_api(session, prompt_styles_config, prompts, model_name):
+def attack_target_model_api(args, session, prompt_styles_config, prompts, model_name):
     delimiter_start = prompt_styles_config[model_name]['delimiter_start']
     delimiter_end = prompt_styles_config[model_name]['delimiter_end']
 
@@ -455,7 +455,8 @@ def attack_target_model_api(session, prompt_styles_config, prompts, model_name):
                 exit(1)
 
             try:
-                print(f"{Fore.GREEN}[+]   Attack payload #{i + 1} will be sent to target model API: {config.TARGET_MODEL_API_URL}")
+                vprint(args, f"{Fore.YELLOW}[!]   config.TARGET_MODEL_API_URL: {config.TARGET_MODEL_API_URL}")
+                vprint(args, f"{Fore.GREEN}[+]   Attack payload #{i + 1} will be sent to target model API: {config.TARGET_MODEL_API_URL}")
                 # Send the payload to the target API
                 response = session.post(config.TARGET_MODEL_API_URL, headers=headers, data=json.dumps(payload))
 
@@ -534,7 +535,7 @@ def run_fuzz_attack(args):
     if proxies is not None:
         session.proxies.update(proxies)
 
-    fuzz_target_model(session)
+    fuzz_target_model(args, session)
 
     # # Automatically include all the analysis after fuzzing is completed
     # save_classification_results()
@@ -562,6 +563,12 @@ def run_all_analyzers(args):
     llm_results_analyzer.main()
 
 
+# Function to print messages based on verbosity
+def vprint(args, *print_args, **kwargs):
+    if args.verbose:
+        print(*print_args, **kwargs)
+
+
 def main():
     # Instantiate an argument parser object
     parser = argparse.ArgumentParser(description='AblitaFuzzer')
@@ -571,6 +578,8 @@ def main():
 
     # Common options when running this tool
     parser.add_argument('--version', action='store_true', help='Show version and exit')
+    # Add --verbose option to print more information
+    parser.add_argument('--verbose', action='store_true', help='Print more information during runtime')
 
     # Add the 'analyze' sub-command
     parser_analyze = subparsers.add_parser('analyze', help='Analyze results from the most recent fuzzing attack')
@@ -599,6 +608,8 @@ def main():
     if args.version:
         print(f'AblitaFuzzer version 0.6-alpha')
         exit()
+
+
 
 
 if __name__ == '__main__':
