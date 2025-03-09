@@ -10,6 +10,7 @@ from analyzers.nlp_results_analyzer import create_agreement_refusal_confused_cha
     save_classification_results
 import analyzers.llm_results_analyzer as llm_results_analyzer
 from utilities.file_utilities import read_seed_prompts_from_csv
+from utilities.http_utilities import generate_unique_http_header
 from utilities.text_utilities import add_trailing_period, wrap_prompt_with_delimiters
 from tests.test_calling_apis import test_call_abliterated_model, test_call_target_model
 from utilities.attack_prompt_classifiers import classify_attack_prompt
