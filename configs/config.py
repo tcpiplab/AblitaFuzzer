@@ -1,7 +1,7 @@
 import os
 
 ## Target LLM API Settings
-TARGET_MODEL_API_URL = "http://localhost:11434/api/chat"
+TARGET_MODEL_API_URL = "http://api.target.local:11434/api/chat"
 TARGET_MODEL_NAME = "gemma:2b"
 
 ## Prompt Generation Settings
@@ -12,14 +12,14 @@ NUM_PROMPTS_TO_GENERATE = 10
 MINIMUM_TOXICITY_SCORE_THRESHOLD = 0.001
 
 ## Abliterated/Uncensored Attack LLM API Settings
-ATTACK_MODEL_API_URL = "http://localhost:8181/v1"
+ATTACK_MODEL_API_URL = "http://api.promptmaker.local:8181/v1"
 ATTACK_MODEL_API_KEY = "lm-studio"
 ATTACK_MODEL_NAME = "TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf"
 ATTACK_MODEL_TEMPERATURE = 10
 
 ## Analyzer LLM API Settings
 # Yes, for now we are using the same model for both attack and analysis
-ANALYZER_MODEL_API_URL = "http://localhost:8181/v1"
+ANALYZER_MODEL_API_URL = "http://api.analyzer.local:8181/v1"
 ANALYZER_MODEL_API_KEY = "lm-studio"
 ANALYZER_MODEL_NAME = "TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf"
 

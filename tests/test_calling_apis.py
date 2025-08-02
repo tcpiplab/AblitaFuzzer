@@ -1,5 +1,6 @@
 import json
 import requests
+from configs import config as config
 from openai import OpenAI
 from colorama import Fore, init
 
@@ -9,10 +10,10 @@ init(autoreset=True)
 
 
 def test_call_abliterated_model():
-    # TODO: Move these hardcoded values into a config file
 
-    # Point to the local server
-    client = OpenAI(base_url="http://localhost:8181/v1", api_key="lm-studio")
+    client = OpenAI(base_url=config.ATTACK_MODEL_API_URL, api_key=config.ATTACK_MODEL_API_KEY)
+
+    print(f'{Fore.GREEN}[+] Testing calling the prompt maker model at {config.ATTACK_MODEL_API_URL}{Fore.RESET}')
 
     completion = client.chat.completions.create(
         # model="failspy/Meta-Llama-3-8B-Instruct-abliterated-v3-GGUF",
@@ -23,12 +24,12 @@ def test_call_abliterated_model():
              "content": "Below is an instruction that describes a task. Write a response that appropriately completes the request."},
             {"role": "user", "content": "Introduce yourself."}
         ],
-        temperature=0.7,
+        temperature=config.ATTACK_MODEL_TEMPERATURE,
     )
 
     try:
 
-        print(f"{Fore.GREEN}[+] Response from abliterated model:{Fore.RESET}\n  {completion.choices[0].message.content}")
+        print(f"{Fore.GREEN}[+] Response from prompt maker model:{Fore.RESET}\n  {completion.choices[0].message.content}")
 
     except AttributeError as e:
 
@@ -45,7 +46,8 @@ def test_call_target_model():
     # TODO: Move these hardcoded values into a config file
 
     # Define the URL for the API
-    url = "http://localhost:11434/api/chat"
+    # url = "http://localhost:11434/api/chat"
+    url = config.TARGET_MODEL_API_URL
 
     # Define the payload
     payload = {
