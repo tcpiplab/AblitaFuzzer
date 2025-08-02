@@ -176,18 +176,21 @@ def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prom
     # Function to generate malicious prompts using the abliterated model
     client = OpenAI(base_url=config.ATTACK_MODEL_API_URL, api_key=config.ATTACK_MODEL_API_KEY)
 
-    # Verify that seed_prompt_csv_file_path is a string and not a file IO object
-    if not isinstance(seed_prompt_csv_file_path, str):
-        raise Exception(f"{Fore.RED}[!] csv_file_path argument must be a string")
+    # If no seed_prompt_csv_file_path provided, the read_seed_prompts_from_csv function
+    # will automatically resolve the dataset from configuration
+    if seed_prompt_csv_file_path is not None:
+        # Verify that seed_prompt_csv_file_path is a string and not a file IO object
+        if not isinstance(seed_prompt_csv_file_path, str):
+            raise Exception(f"{Fore.RED}[!] csv_file_path argument must be a string")
 
     num_prompts = num_prompts
 
     try:
-        # Read the malicious seed prompt/response tuples from the CSV file into a list
+        # Read the seed prompt/response tuples - this now supports both local files and datasets
         list_of_seed_prompt_response_tuples = read_seed_prompts_from_csv(seed_prompt_csv_file_path)
 
     except Exception as e:
-        print(f"{Fore.RED}[!] Error reading seed attack prompts from CSV file: {e}")
+        print(f"{Fore.RED}[!] Error reading seed prompts: {e}")
         list_of_seed_prompt_response_tuples = []
 
     try:

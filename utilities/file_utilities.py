@@ -1,17 +1,107 @@
 import csv
+import os
+from pathlib import Path
+from typing import List, Tuple, Optional
 from colorama import Fore
+from utilities.dataset_registry import get_dataset_info, get_dataset_url, get_dataset_hash, is_dataset_available
+from utilities.download_manager import download_dataset, get_cached_dataset_path
+import configs.config as config
 
 
-def read_seed_prompts_from_csv(path_to_seed_prompts_csv_file):
+def resolve_dataset_path(dataset_identifier: str) -> Optional[str]:
     """
-    Reads malicious seed prompts and responses from a CSV file.
+    Resolve a dataset identifier to a local file path.
+    
+    Args:
+        dataset_identifier: Either a dataset registry ID or a local file path
+        
+    Returns:
+        Path to the dataset file, or None if not available
+    """
+    # Check if it's already a local file path
+    if os.path.exists(dataset_identifier):
+        return dataset_identifier
+    
+    # Check if it's a dataset registry ID
+    if is_dataset_available(dataset_identifier):
+        # Try to get cached version first
+        cached_path = get_cached_dataset_path(dataset_identifier, config.DATASET_CACHE_DIR)
+        if cached_path:
+            return str(cached_path)
+        
+        # Download the dataset
+        print(f"{Fore.GREEN}[+] Dataset '{dataset_identifier}' not cached, downloading...")
+        url = get_dataset_url(dataset_identifier)
+        expected_hash = get_dataset_hash(dataset_identifier)
+        
+        downloaded_path = download_dataset(
+            dataset_identifier,
+            url,
+            expected_hash,
+            force_download=config.FORCE_DATASET_DOWNLOAD,
+            cache_dir=config.DATASET_CACHE_DIR,
+            show_progress=config.SHOW_DOWNLOAD_PROGRESS
+        )
+        
+        if downloaded_path:
+            return str(downloaded_path)
+        else:
+            print(f"{Fore.RED}[!] Failed to download dataset '{dataset_identifier}'")
+            return None
+    
+    print(f"{Fore.RED}[!] Unknown dataset identifier: '{dataset_identifier}'")
+    return None
+
+
+def get_seed_prompts_dataset_path() -> Optional[str]:
+    """
+    Get the path to the seed prompts dataset based on configuration.
+    
+    Returns:
+        Path to the dataset file, or None if not available
+    """
+    # First try the new dataset configuration
+    if hasattr(config, 'SEED_PROMPT_DATASET') and config.SEED_PROMPT_DATASET:
+        dataset_path = resolve_dataset_path(config.SEED_PROMPT_DATASET)
+        if dataset_path:
+            return dataset_path
+    
+    # Fall back to legacy file path configuration
+    if hasattr(config, 'SEED_PROMPT_INPUT_FILE_PATH') and config.SEED_PROMPT_INPUT_FILE_PATH:
+        legacy_path = config.SEED_PROMPT_INPUT_FILE_PATH
+        if os.path.exists(legacy_path):
+            print(f"{Fore.YELLOW}[!] Using legacy file path configuration: {legacy_path}")
+            return legacy_path
+    
+    print(f"{Fore.RED}[!] No valid seed prompts dataset configured")
+    return None
+
+
+def read_seed_prompts_from_csv(path_to_seed_prompts_csv_file: Optional[str] = None) -> List[Tuple[str, str]]:
+    """
+    Reads seed prompts and responses from a CSV file or dataset.
 
     Args:
-        path_to_seed_prompts_csv_file (str): The path to the CSV file containing seed prompts and responses.
+        path_to_seed_prompts_csv_file: Optional path to CSV file or dataset ID. 
+                                     If None, uses configuration to determine dataset.
 
     Returns:
-        list: A list of tuples where each tuple contains a prompt and its corresponding response.
+        List of tuples where each tuple contains a prompt and its corresponding response.
     """
+    # If no path provided, try to resolve from configuration
+    if path_to_seed_prompts_csv_file is None:
+        path_to_seed_prompts_csv_file = get_seed_prompts_dataset_path()
+        if path_to_seed_prompts_csv_file is None:
+            print(f"{Fore.RED}[!] No seed prompts dataset available")
+            return []
+    else:
+        # If path is provided but might be a dataset ID, try to resolve it
+        resolved_path = resolve_dataset_path(path_to_seed_prompts_csv_file)
+        if resolved_path:
+            path_to_seed_prompts_csv_file = resolved_path
+        elif not os.path.exists(path_to_seed_prompts_csv_file):
+            print(f"{Fore.RED}[!] Dataset path could not be resolved: {path_to_seed_prompts_csv_file}")
+            return []
 
     seed_prompt_response_tuples = []
 

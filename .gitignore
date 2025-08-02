@@ -18,3 +18,13 @@
 /.idea/aws.xml
 /output.html
 /.idea/vcs.xml
+
+# Dataset cache directories
+.ablitafuzzer/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.coverage

@@ -97,6 +97,29 @@ Or, if proxying through Burp or Zap:
 python3 ablitafuzzer.py fuzz --proxy 127.0.0.1:8080
 ```
 
+#### Dataset Management
+
+AblitaFuzzer now includes an integrated dataset management system that downloads and caches research datasets automatically:
+
+```bash
+# List available datasets
+python3 ablitafuzzer.py datasets list
+
+# Get detailed information about a dataset
+python3 ablitafuzzer.py datasets info advbench_harmful
+
+# Download a specific dataset
+python3 ablitafuzzer.py datasets download advbench_harmful
+
+# Check cache status
+python3 ablitafuzzer.py cache status
+
+# Clear cache (optional dataset name)
+python3 ablitafuzzer.py cache clear [dataset_name]
+```
+
+The tool automatically downloads and caches datasets from established research sources like AdvBench when needed. Datasets are cached locally in `~/.ablitafuzzer/cache/` to avoid repeated downloads.
+
 #### Analyze the results
 
 ```bash
@@ -218,7 +241,7 @@ The available actions are:
 
 ```shell
 python3 ablitafuzzer.py 
-usage: ablitafuzzer.py [-h] [--version] {analyze,fuzz,test} ...
+usage: ablitafuzzer.py [-h] [--version] {analyze,fuzz,test,datasets,cache} ...
 
 AblitaFuzzer
 
@@ -229,10 +252,12 @@ options:
 subcommands:
   valid subcommands
 
-  {analyze,fuzz,test}  additional help
+  {analyze,fuzz,test,datasets,cache}  additional help
     analyze            Analyze results from the most recent fuzzing attack
     fuzz               Fuzz the target model
     test               Test calling both APIs but do not fuzz
+    datasets           Dataset management commands
+    cache              Cache management commands
 ```
 
 ## Requirements
