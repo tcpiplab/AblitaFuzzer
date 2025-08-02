@@ -38,6 +38,24 @@ Or, depending on your OS...
 python3 -m pip3 install -r requirements.txt
 ```
 
+#### Configure local hostnames
+
+AblitaFuzzer uses custom local hostnames to improve configuration flexibility. Add the following entries to your `/etc/hosts` file:
+
+```bash
+# Setup for ablitafuzzer.py config
+127.0.0.1   api.target.local
+127.0.0.1   burp.proxy.local
+127.0.0.1   api.promptmaker.local
+127.0.0.1   api.analyzer.local
+```
+
+These hostnames allow you to easily distinguish between different API endpoints in the configuration and make it 
+simpler to modify individual endpoints without hunting through hardcoded IP addresses. These hostnames also make it 
+easier to understand the role and functionality of each API endpoint or hostname mentioned in the source code as 
+well as in the output of running the AblitaFuzzer tool. And of course they make it all less confusing when you are 
+testing everything on localhost in a lab environment.
+
 #### Set up the abliterated "attacker" LLM API
 
 - Host an [abliterated](https://huggingface.co/collections/failspy/abliterated-v3-664a8ad0db255eefa7d0012b) or uncensored LLM at a localhost API URL. 
