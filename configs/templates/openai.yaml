@@ -1,0 +1,76 @@
+version: "1.0"
+
+# OpenAI Configuration Template
+# This template provides a basic configuration for using OpenAI GPT models
+
+# Global settings
+global:
+  timeout:
+    connection: 30
+    read: 60
+    total: 120
+  retry:
+    attempts: 3
+    backoff: "exponential"
+    max_delay: 30
+
+# Environment configurations
+environments:
+  development:
+    log_level: "DEBUG"
+    rate_limit: 1  # requests per second
+
+  production:
+    log_level: "INFO"
+    rate_limit: 10
+    require_confirmation: true
+
+# Provider configurations
+providers:
+  openai:
+    type: "openai"
+    base_url: "https://api.openai.com/v1/chat/completions"
+    auth:
+      type: "api_key"
+      header: "Authorization"
+      format: "Bearer ${OPENAI_API_KEY}"
+    models:
+      - "gpt-4"
+      - "gpt-4-turbo-preview"
+      - "gpt-3.5-turbo"
+
+# Target definitions
+targets:
+  gpt4_target:
+    provider: "openai"
+    model: "gpt-4"
+    description: "OpenAI GPT-4 for testing"
+
+  gpt35_target:
+    provider: "openai"
+    model: "gpt-3.5-turbo"
+    description: "OpenAI GPT-3.5 Turbo for testing"
+
+# Attack configurations
+attack:
+  attacker_model:
+    provider: "openai"
+    model: "gpt-4"
+    temperature: 0.7
+
+  analyzer_model:
+    provider: "openai"
+    model: "gpt-3.5-turbo"
+    temperature: 0.3
+
+# Campaign configurations
+campaigns:
+  standard_test:
+    targets: ["gpt4_target"]
+    datasets: ["advbench_harmful"]
+    concurrent_targets: 1
+
+  comprehensive_test:
+    targets: ["gpt4_target", "gpt35_target"]
+    datasets: ["advbench_harmful", "jailbreak_2023"]
+    concurrent_targets: 1

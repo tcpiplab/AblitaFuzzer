@@ -1,0 +1,145 @@
+version: "1.0"
+
+# Enterprise Configuration Template
+# This template provides a comprehensive configuration for enterprise environments
+# with multiple providers, proxy settings, and security considerations
+
+# Global settings
+global:
+  proxy:
+    http: "${HTTP_PROXY}"
+    https: "${HTTPS_PROXY}"
+  timeout:
+    connection: 60
+    read: 120
+    total: 180
+  retry:
+    attempts: 5
+    backoff: "exponential"
+    max_delay: 60
+
+# Environment configurations
+environments:
+  development:
+    log_level: "DEBUG"
+    rate_limit: 1
+    require_confirmation: false
+
+  staging:
+    log_level: "INFO"
+    rate_limit: 5
+    require_confirmation: true
+
+  production:
+    log_level: "WARNING"
+    rate_limit: 20
+    require_confirmation: true
+
+# Provider configurations
+providers:
+  openai_prod:
+    type: "openai"
+    base_url: "https://api.openai.com/v1/chat/completions"
+    auth:
+      type: "api_key"
+      header: "Authorization"
+      format: "Bearer ${OPENAI_API_KEY_PROD}"
+    models:
+      - "gpt-4"
+      - "gpt-3.5-turbo"
+
+  azure_openai_prod:
+    type: "azure_openai"
+    base_url: "https://${AZURE_RESOURCE_PROD}.openai.azure.com/openai/deployments/${AZURE_DEPLOYMENT_PROD}/chat/completions"
+    auth:
+      type: "api_key"
+      header: "api-key"
+      format: "${AZURE_OPENAI_API_KEY_PROD}"
+    api_version: "2023-12-01-preview"
+    deployment: "${AZURE_DEPLOYMENT_PROD}"
+    models:
+      - "gpt-4"
+      - "gpt-35-turbo"
+
+  anthropic_prod:
+    type: "anthropic"
+    base_url: "https://api.anthropic.com/v1/messages"
+    auth:
+      type: "api_key"
+      header: "x-api-key"
+      format: "${ANTHROPIC_API_KEY_PROD}"
+    models:
+      - "claude-3-opus-20240229"
+      - "claude-3-sonnet-20240229"
+
+  internal_llm:
+    type: "custom"
+    base_url: "https://internal-llm.company.com/v1/chat/completions"
+    auth:
+      type: "bearer"
+      token: "${INTERNAL_API_TOKEN}"
+    models:
+      - "company-llm-v1"
+
+# Target definitions for different client engagements
+targets:
+  # Client A targets
+  client_a_openai:
+    provider: "openai_prod"
+    model: "gpt-4"
+    description: "Client A production OpenAI deployment"
+
+  client_a_azure:
+    provider: "azure_openai_prod"
+    model: "gpt-4"
+    description: "Client A Azure OpenAI deployment"
+
+  # Client B targets
+  client_b_anthropic:
+    provider: "anthropic_prod"
+    model: "claude-3-opus-20240229"
+    description: "Client B Anthropic Claude deployment"
+
+  # Internal testing targets
+  internal_model:
+    provider: "internal_llm"
+    model: "company-llm-v1"
+    description: "Internal company LLM for testing"
+
+# Attack configurations
+attack:
+  attacker_model:
+    provider: "openai_prod"
+    model: "gpt-4"
+    temperature: 0.7
+
+  analyzer_model:
+    provider: "openai_prod"
+    model: "gpt-3.5-turbo"
+    temperature: 0.3
+
+# Campaign configurations for different engagement types
+campaigns:
+  client_a_assessment:
+    targets: ["client_a_openai", "client_a_azure"]
+    datasets: ["advbench_harmful", "jailbreak_2023"]
+    concurrent_targets: 1
+    prompt_limit: 100
+
+  client_b_assessment:
+    targets: ["client_b_anthropic"]
+    datasets: ["advbench_harmful"]
+    concurrent_targets: 1
+    prompt_limit: 50
+
+  comprehensive_pentest:
+    targets: ["client_a_openai", "client_a_azure", "client_b_anthropic"]
+    datasets: ["advbench_harmful", "jailbreak_2023"]
+    concurrent_targets: 2
+    prompt_limit: 200
+
+  internal_validation:
+    targets: ["internal_model"]
+    datasets: ["advbench_harmful"]
+    concurrent_targets: 1
+    prompt_limit: 25

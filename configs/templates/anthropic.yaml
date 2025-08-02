@@ -1,0 +1,81 @@
+version: "1.0"
+
+# Anthropic Claude Configuration Template
+# This template provides a basic configuration for using Anthropic Claude models
+
+# Global settings
+global:
+  timeout:
+    connection: 30
+    read: 60
+    total: 120
+  retry:
+    attempts: 3
+    backoff: "exponential"
+    max_delay: 30
+
+# Environment configurations
+environments:
+  development:
+    log_level: "DEBUG"
+    rate_limit: 1  # requests per second
+
+  production:
+    log_level: "INFO"
+    rate_limit: 5
+    require_confirmation: true
+
+# Provider configurations
+providers:
+  anthropic:
+    type: "anthropic"
+    base_url: "https://api.anthropic.com/v1/messages"
+    auth:
+      type: "api_key"
+      header: "x-api-key"
+      format: "${ANTHROPIC_API_KEY}"
+    models:
+      - "claude-3-opus-20240229"
+      - "claude-3-sonnet-20240229"
+      - "claude-3-haiku-20240307"
+
+# Target definitions
+targets:
+  claude_opus_target:
+    provider: "anthropic"
+    model: "claude-3-opus-20240229"
+    description: "Anthropic Claude 3 Opus for testing"
+
+  claude_sonnet_target:
+    provider: "anthropic"
+    model: "claude-3-sonnet-20240229"
+    description: "Anthropic Claude 3 Sonnet for testing"
+
+  claude_haiku_target:
+    provider: "anthropic"
+    model: "claude-3-haiku-20240307"
+    description: "Anthropic Claude 3 Haiku for testing"
+
+# Attack configurations
+attack:
+  attacker_model:
+    provider: "anthropic"
+    model: "claude-3-opus-20240229"
+    temperature: 0.7
+
+  analyzer_model:
+    provider: "anthropic"
+    model: "claude-3-sonnet-20240229"
+    temperature: 0.3
+
+# Campaign configurations
+campaigns:
+  claude_test:
+    targets: ["claude_opus_target"]
+    datasets: ["advbench_harmful"]
+    concurrent_targets: 1
+
+  multi_claude_test:
+    targets: ["claude_opus_target", "claude_sonnet_target", "claude_haiku_target"]
+    datasets: ["advbench_harmful", "jailbreak_2023"]
+    concurrent_targets: 1
