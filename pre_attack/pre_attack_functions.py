@@ -1,13 +1,57 @@
 import random
 import re
+import requests
 
 from colorama import Fore
 from openai import OpenAI
 
 from configs import config as config
+from configs.config_loader import get_attack_model_configuration
+from configs.api_providers import get_request_formatter, get_response_parser
+from configs.auth_manager import generate_auth_headers
 from utilities.attack_prompt_classifiers import classify_attack_prompt
 from utilities.file_utilities import read_seed_prompts_from_csv
 from utilities.text_utilities import add_trailing_period
+
+
+def create_api_client(attack_config):
+    """
+    Create appropriate API client based on configuration.
+    
+    Args:
+        attack_config (dict): Attack model configuration
+        
+    Returns:
+        OpenAI client or similar API client
+    """
+    provider_type = attack_config.get('type', 'openai')
+    
+    if provider_type in ['openai', 'azure_openai', 'ollama']:
+        # Use OpenAI client for OpenAI-compatible APIs
+        base_url = attack_config['base_url']
+        
+        # Extract API key from auth configuration
+        auth_config = attack_config['auth']
+        if auth_config['type'] == 'api_key':
+            auth_format = auth_config['format']
+            if 'Bearer ' in auth_format:
+                api_key = auth_format.replace('Bearer ', '')
+            else:
+                api_key = auth_format
+        else:
+            api_key = "dummy"  # Some APIs don't need a real key
+        
+        return OpenAI(base_url=base_url, api_key=api_key)
+    
+    else:
+        # For non-OpenAI compatible APIs, we'll need to implement custom clients
+        # For now, try to use OpenAI client as fallback
+        print(f"{Fore.YELLOW}[!] Warning: Provider type {provider_type} not fully supported, using OpenAI client as fallback")
+        
+        base_url = attack_config.get('base_url', 'http://localhost:8181/v1')
+        api_key = "fallback"
+        
+        return OpenAI(base_url=base_url, api_key=api_key)
 
 
 def call_abliterated_model_api(num_prompts, client, few_shot_examples):
@@ -173,8 +217,19 @@ def call_abliterated_model_api(num_prompts, client, few_shot_examples):
 
 
 def generate_malicious_prompts(num_prompts, seed_prompt_csv_file_path=None, prompt_styles_config=None, target_prompt_style=None):
-    # Function to generate malicious prompts using the abliterated model
-    client = OpenAI(base_url=config.ATTACK_MODEL_API_URL, api_key=config.ATTACK_MODEL_API_KEY)
+    # Function to generate malicious prompts using the new configuration system
+    try:
+        # Get the current configuration
+        current_config = config.get_config()
+        attack_config = get_attack_model_configuration(current_config, 'attacker_model')
+        
+        # Create client with new configuration
+        client = create_api_client(attack_config)
+        
+    except Exception as e:
+        print(f"{Fore.YELLOW}[!] Warning: New configuration system not available, falling back to legacy: {e}")
+        # Fallback to legacy OpenAI client
+        client = OpenAI(base_url=config.ATTACK_MODEL_API_URL, api_key=config.ATTACK_MODEL_API_KEY)
 
     # If no seed_prompt_csv_file_path provided, the read_seed_prompts_from_csv function
     # will automatically resolve the dataset from configuration

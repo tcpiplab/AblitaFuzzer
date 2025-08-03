@@ -1,0 +1,77 @@
+version: "1.0"
+
+# Azure OpenAI Configuration Template
+# This template provides a basic configuration for using Azure OpenAI deployments
+
+# Global settings
+global:
+  timeout:
+    connection: 30
+    read: 60
+    total: 120
+  retry:
+    attempts: 3
+    backoff: "exponential"
+    max_delay: 30
+
+# Environment configurations
+environments:
+  development:
+    log_level: "DEBUG"
+    rate_limit: 1  # requests per second
+
+  production:
+    log_level: "INFO"
+    rate_limit: 10
+    require_confirmation: true
+
+# Provider configurations
+providers:
+  azure_openai:
+    type: "azure_openai"
+    base_url: "https://${AZURE_RESOURCE}.openai.azure.com/openai/deployments/${AZURE_DEPLOYMENT_NAME}/chat/completions"
+    auth:
+      type: "api_key"
+      header: "api-key"
+      format: "${AZURE_OPENAI_API_KEY}"
+    api_version: "2023-12-01-preview"
+    deployment: "${AZURE_DEPLOYMENT_NAME}"
+    models:
+      - "gpt-4"
+      - "gpt-35-turbo"
+
+# Target definitions
+targets:
+  azure_gpt4_target:
+    provider: "azure_openai"
+    model: "gpt-4"
+    description: "Azure OpenAI GPT-4 deployment"
+
+  azure_gpt35_target:
+    provider: "azure_openai"
+    model: "gpt-35-turbo"
+    description: "Azure OpenAI GPT-3.5 Turbo deployment"
+
+# Attack configurations
+attack:
+  attacker_model:
+    provider: "azure_openai"
+    model: "gpt-4"
+    temperature: 0.7
+
+  analyzer_model:
+    provider: "azure_openai"
+    model: "gpt-35-turbo"
+    temperature: 0.3
+
+# Campaign configurations
+campaigns:
+  azure_test:
+    targets: ["azure_gpt4_target"]
+    datasets: ["advbench_harmful"]
+    concurrent_targets: 1
+
+  azure_comprehensive:
+    targets: ["azure_gpt4_target", "azure_gpt35_target"]
+    datasets: ["advbench_harmful", "jailbreak_2023"]
+    concurrent_targets: 1

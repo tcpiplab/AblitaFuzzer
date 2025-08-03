@@ -1,0 +1,155 @@
+version: "1.0"
+
+# Multi-Target Configuration Template
+# This template demonstrates how to configure multiple API providers
+# for comparative testing across different LLM services
+
+# Global settings
+global:
+  timeout:
+    connection: 45
+    read: 90
+    total: 150
+  retry:
+    attempts: 3
+    backoff: "exponential"
+    max_delay: 30
+
+# Environment configurations
+environments:
+  development:
+    log_level: "DEBUG"
+    rate_limit: 1
+
+  production:
+    log_level: "INFO"
+    rate_limit: 8
+    require_confirmation: true
+
+# Provider configurations
+providers:
+  openai:
+    type: "openai"
+    base_url: "https://api.openai.com/v1/chat/completions"
+    auth:
+      type: "api_key"
+      header: "Authorization"
+      format: "Bearer ${OPENAI_API_KEY}"
+    models:
+      - "gpt-4"
+      - "gpt-3.5-turbo"
+
+  anthropic:
+    type: "anthropic"
+    base_url: "https://api.anthropic.com/v1/messages"
+    auth:
+      type: "api_key"
+      header: "x-api-key"
+      format: "${ANTHROPIC_API_KEY}"
+    models:
+      - "claude-3-opus-20240229"
+      - "claude-3-sonnet-20240229"
+
+  azure_openai:
+    type: "azure_openai"
+    base_url: "https://${AZURE_RESOURCE}.openai.azure.com/openai/deployments/${AZURE_DEPLOYMENT}/chat/completions"
+    auth:
+      type: "api_key"
+      header: "api-key"
+      format: "${AZURE_OPENAI_API_KEY}"
+    api_version: "2023-12-01-preview"
+    deployment: "${AZURE_DEPLOYMENT}"
+    models:
+      - "gpt-4"
+      - "gpt-35-turbo"
+
+  local_ollama:
+    type: "ollama"
+    base_url: "http://localhost:11434/api/generate"
+    auth:
+      type: "api_key"
+      header: "Authorization"
+      format: "Bearer ollama"
+    models:
+      - "llama2"
+      - "mistral"
+
+# Target definitions for comparative testing
+targets:
+  # OpenAI targets
+  openai_gpt4:
+    provider: "openai"
+    model: "gpt-4"
+    description: "OpenAI GPT-4 for comparison"
+
+  openai_gpt35:
+    provider: "openai"
+    model: "gpt-3.5-turbo"
+    description: "OpenAI GPT-3.5 Turbo for comparison"
+
+  # Anthropic targets
+  claude_opus:
+    provider: "anthropic"
+    model: "claude-3-opus-20240229"
+    description: "Claude 3 Opus for comparison"
+
+  claude_sonnet:
+    provider: "anthropic"
+    model: "claude-3-sonnet-20240229"
+    description: "Claude 3 Sonnet for comparison"
+
+  # Azure targets
+  azure_gpt4:
+    provider: "azure_openai"
+    model: "gpt-4"
+    description: "Azure OpenAI GPT-4 for comparison"
+
+  # Local targets
+  local_llama:
+    provider: "local_ollama"
+    model: "llama2"
+    description: "Local Llama2 model for comparison"
+
+# Attack configurations
+attack:
+  attacker_model:
+    provider: "openai"
+    model: "gpt-4"
+    temperature: 0.8
+
+  analyzer_model:
+    provider: "openai"
+    model: "gpt-3.5-turbo"
+    temperature: 0.2
+
+# Campaign configurations for different comparative scenarios
+campaigns:
+  gpt_vs_claude:
+    targets: ["openai_gpt4", "claude_opus"]
+    datasets: ["advbench_harmful"]
+    concurrent_targets: 1
+    prompt_limit: 50
+
+  cloud_providers_comparison:
+    targets: ["openai_gpt4", "claude_opus", "azure_gpt4"]
+    datasets: ["advbench_harmful", "jailbreak_2023"]
+    concurrent_targets: 1
+    prompt_limit: 100
+
+  model_tier_comparison:
+    targets: ["openai_gpt4", "openai_gpt35", "claude_opus", "claude_sonnet"]
+    datasets: ["advbench_harmful"]
+    concurrent_targets: 2
+    prompt_limit: 75
+
+  cloud_vs_local:
+    targets: ["openai_gpt4", "local_llama"]
+    datasets: ["advbench_harmful"]
+    concurrent_targets: 1
+    prompt_limit: 30
+
+  comprehensive_benchmark:
+    targets: ["openai_gpt4", "openai_gpt35", "claude_opus", "claude_sonnet", "azure_gpt4", "local_llama"]
+    datasets: ["advbench_harmful", "jailbreak_2023"]
+    concurrent_targets: 2
+    prompt_limit: 150

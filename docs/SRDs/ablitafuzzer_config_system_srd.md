@@ -248,98 +248,454 @@ campaigns:
     prompt_limit: 20
 ```
 
-### Configuration Loading Architecture
+### Functional Configuration Loading Architecture
 
 ```python
 # configs/config_loader.py
-class ConfigurationManager:
-    def __init__(self, config_path=None, environment=None, profile=None):
-        self.config_path = config_path or self._get_default_config_path()
-        self.environment = environment or os.getenv('ABLITAFUZZER_ENV', 'development')
-        self.profile = profile
-        self.config = self._load_and_validate_config()
+
+def load_configuration(config_path=None, environment=None, profile=None):
+    """
+    Load and validate configuration from YAML file with environment resolution.
     
-    def get_target_config(self, target_name):
-        """Get complete configuration for a specific target"""
+    Args:
+        config_path (str): Path to configuration file
+        environment (str): Environment name (development, staging, production)
+        profile (str): Configuration profile name
+    
+    Returns:
+        dict: Loaded and validated configuration
+    """
+    config_path = config_path or get_default_config_path()
+    environment = environment or os.getenv('ABLITAFUZZER_ENV', 'development')
+    
+    raw_config = load_yaml_file(config_path)
+    resolved_config = resolve_environment_variables(raw_config)
+    validated_config = validate_configuration_schema(resolved_config)
+    
+    return merge_environment_overrides(validated_config, environment)
+
+def get_target_configuration(config, target_name):
+    """
+    Get complete configuration for a specific target including provider details.
+    
+    Args:
+        config (dict): Loaded configuration
+        target_name (str): Name of target to retrieve
         
-    def get_provider_config(self, provider_name):
-        """Get provider-specific configuration with auth resolution"""
+    Returns:
+        dict: Complete target configuration with provider details merged
+    """
+    target_config = config['targets'].get(target_name)
+    if not target_config:
+        raise ValueError(f"Target '{target_name}' not found in configuration")
+    
+    provider_name = target_config['provider']
+    provider_config = config['providers'].get(provider_name)
+    if not provider_config:
+        raise ValueError(f"Provider '{provider_name}' not found in configuration")
+    
+    return merge_target_and_provider_config(target_config, provider_config)
+
+def validate_target_connectivity(config, target_name):
+    """
+    Test network connectivity and authentication to target API.
+    
+    Args:
+        config (dict): Loaded configuration
+        target_name (str): Name of target to test
         
-    def validate_target_connectivity(self, target_name):
-        """Test network connectivity and auth to target"""
+    Returns:
+        dict: Connectivity test results with status and error details
+    """
+    target_config = get_target_configuration(config, target_name)
+    auth_headers = generate_auth_headers(target_config['auth'])
+    
+    try:
+        test_response = send_test_request(target_config['base_url'], auth_headers)
+        return {
+            'status': 'success',
+            'response_time': test_response.elapsed.total_seconds(),
+            'api_version': extract_api_version(test_response)
+        }
+    except Exception as e:
+        return {
+            'status': 'failed',
+            'error': str(e),
+            'troubleshooting': generate_troubleshooting_guidance(e)
+        }
+
+def list_available_targets(config):
+    """
+    List all configured targets with their status information.
+    
+    Args:
+        config (dict): Loaded configuration
         
-    def list_available_targets(self):
-        """List all configured targets with status"""
+    Returns:
+        list: Target information with connectivity status
+    """
+    targets = []
+    for target_name, target_config in config['targets'].items():
+        connectivity_status = validate_target_connectivity(config, target_name)
+        targets.append({
+            'name': target_name,
+            'description': target_config.get('description', ''),
+            'provider': target_config['provider'],
+            'model': target_config['model'],
+            'status': connectivity_status['status']
+        })
+    return targets
 ```
 
-### API Provider Abstraction
+### Functional API Provider System
 
 ```python
 # configs/api_providers.py
-class BaseAPIProvider:
-    def format_request(self, prompt, model_params):
-        """Format request for this provider's API"""
-        
-    def parse_response(self, response):
-        """Parse response from this provider's API"""
-        
-    def get_auth_headers(self, auth_config):
-        """Generate authentication headers"""
 
-class OpenAIProvider(BaseAPIProvider):
-    def format_request(self, prompt, model_params):
-        return {
-            "model": model_params["model"],
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": model_params.get("temperature", 0.7)
-        }
+def format_openai_request(prompt, model_params):
+    """
+    Format request payload for OpenAI-compatible APIs.
+    
+    Args:
+        prompt (str): User prompt to send
+        model_params (dict): Model configuration parameters
+        
+    Returns:
+        dict: Formatted request payload
+    """
+    return {
+        "model": model_params["model"],
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": model_params.get("temperature", 0.7),
+        "max_tokens": model_params.get("max_tokens", 1000)
+    }
 
-class AnthropicProvider(BaseAPIProvider):
-    def format_request(self, prompt, model_params):
-        return {
-            "model": model_params["model"],
-            "max_tokens": model_params.get("max_tokens", 1000),
-            "messages": [{"role": "user", "content": prompt}]
-        }
+def format_anthropic_request(prompt, model_params):
+    """
+    Format request payload for Anthropic Claude API.
+    
+    Args:
+        prompt (str): User prompt to send
+        model_params (dict): Model configuration parameters
+        
+    Returns:
+        dict: Formatted request payload
+    """
+    return {
+        "model": model_params["model"],
+        "max_tokens": model_params.get("max_tokens", 1000),
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": model_params.get("temperature", 0.7)
+    }
+
+def format_azure_openai_request(prompt, model_params):
+    """
+    Format request payload for Azure OpenAI deployments.
+    
+    Args:
+        prompt (str): User prompt to send
+        model_params (dict): Model configuration parameters
+        
+    Returns:
+        dict: Formatted request payload
+    """
+    base_payload = format_openai_request(prompt, model_params)
+    # Azure uses deployment name instead of model in URL path
+    base_payload.pop("model", None)
+    return base_payload
+
+def get_request_formatter(provider_type):
+    """
+    Get the appropriate request formatter function for a provider type.
+    
+    Args:
+        provider_type (str): Type of API provider
+        
+    Returns:
+        function: Request formatter function
+    """
+    formatters = {
+        'openai': format_openai_request,
+        'anthropic': format_anthropic_request,
+        'azure_openai': format_azure_openai_request
+    }
+    
+    formatter = formatters.get(provider_type)
+    if not formatter:
+        raise ValueError(f"Unsupported provider type: {provider_type}")
+    
+    return formatter
+
+def parse_openai_response(response_data):
+    """
+    Parse response from OpenAI-compatible APIs.
+    
+    Args:
+        response_data (dict): Raw API response
+        
+    Returns:
+        str: Extracted response content
+    """
+    try:
+        return response_data['choices'][0]['message']['content']
+    except (KeyError, IndexError) as e:
+        raise ValueError(f"Invalid OpenAI response format: {e}")
+
+def parse_anthropic_response(response_data):
+    """
+    Parse response from Anthropic Claude API.
+    
+    Args:
+        response_data (dict): Raw API response
+        
+    Returns:
+        str: Extracted response content
+    """
+    try:
+        return response_data['content'][0]['text']
+    except (KeyError, IndexError) as e:
+        raise ValueError(f"Invalid Anthropic response format: {e}")
+
+def get_response_parser(provider_type):
+    """
+    Get the appropriate response parser function for a provider type.
+    
+    Args:
+        provider_type (str): Type of API provider
+        
+    Returns:
+        function: Response parser function
+    """
+    parsers = {
+        'openai': parse_openai_response,
+        'anthropic': parse_anthropic_response,
+        'azure_openai': parse_openai_response  # Azure uses OpenAI format
+    }
+    
+    parser = parsers.get(provider_type)
+    if not parser:
+        raise ValueError(f"Unsupported provider type: {provider_type}")
+    
+    return parser
 ```
 
-### Environment Variable Integration
+### Functional Environment Variable Resolution
 
 ```python
 # configs/env_resolver.py
-class EnvironmentResolver:
-    @staticmethod
-    def resolve_env_vars(config_value):
-        """Resolve ${VAR_NAME} references in configuration values"""
+
+def resolve_environment_variables(config_value):
+    """
+    Resolve ${VAR_NAME} references in configuration values.
+    
+    Args:
+        config_value (str): Configuration value that may contain env var references
         
-    @staticmethod
-    def validate_required_env_vars(config):
-        """Ensure all required environment variables are set"""
+    Returns:
+        str: Resolved configuration value
+    """
+    import re
+    import os
+    
+    if not isinstance(config_value, str):
+        return config_value
+    
+    def replace_env_var(match):
+        var_name = match.group(1)
+        env_value = os.getenv(var_name)
+        if env_value is None:
+            raise ValueError(f"Required environment variable '{var_name}' is not set")
+        return env_value
+    
+    return re.sub(r'\$\{([^}]+)\}', replace_env_var, config_value)
+
+def validate_required_environment_variables(config):
+    """
+    Ensure all required environment variables are set.
+    
+    Args:
+        config (dict): Configuration dictionary to validate
         
-    @staticmethod
-    def get_env_var_template():
-        """Generate template .env file for user reference"""
+    Returns:
+        list: List of missing environment variables
+    """
+    import re
+    
+    required_vars = set()
+    missing_vars = []
+    
+    def extract_env_vars(obj):
+        if isinstance(obj, dict):
+            for value in obj.values():
+                extract_env_vars(value)
+        elif isinstance(obj, list):
+            for item in obj:
+                extract_env_vars(item)
+        elif isinstance(obj, str):
+            vars_in_string = re.findall(r'\$\{([^}]+)\}', obj)
+            required_vars.update(vars_in_string)
+    
+    extract_env_vars(config)
+    
+    for var_name in required_vars:
+        if os.getenv(var_name) is None:
+            missing_vars.append(var_name)
+    
+    return missing_vars
+
+def generate_env_template(config):
+    """
+    Generate template .env file for user reference.
+    
+    Args:
+        config (dict): Configuration dictionary to analyze
+        
+    Returns:
+        str: Template .env file content
+    """
+    import re
+    
+    env_vars = set()
+    
+    def extract_env_vars(obj):
+        if isinstance(obj, dict):
+            for value in obj.values():
+                extract_env_vars(value)
+        elif isinstance(obj, list):
+            for item in obj:
+                extract_env_vars(item)
+        elif isinstance(obj, str):
+            vars_in_string = re.findall(r'\$\{([^}]+)\}', obj)
+            env_vars.update(vars_in_string)
+    
+    extract_env_vars(config)
+    
+    template_lines = ["# AblitaFuzzer Environment Variables Template", ""]
+    for var_name in sorted(env_vars):
+        template_lines.append(f"{var_name}=your_value_here")
+    
+    return "\n".join(template_lines)
+```
+
+### Functional Authentication System
+
+```python
+# configs/auth_manager.py
+
+def generate_auth_headers(auth_config):
+    """
+    Generate authentication headers based on configuration.
+    
+    Args:
+        auth_config (dict): Authentication configuration
+        
+    Returns:
+        dict: HTTP headers for authentication
+    """
+    auth_type = auth_config.get('type')
+    
+    if auth_type == 'api_key':
+        return generate_api_key_headers(auth_config)
+    elif auth_type == 'bearer':
+        return generate_bearer_token_headers(auth_config)
+    elif auth_type == 'custom':
+        return generate_custom_headers(auth_config)
+    else:
+        raise ValueError(f"Unsupported authentication type: {auth_type}")
+
+def generate_api_key_headers(auth_config):
+    """
+    Generate headers for API key authentication.
+    
+    Args:
+        auth_config (dict): API key authentication configuration
+        
+    Returns:
+        dict: HTTP headers with API key
+    """
+    header_name = auth_config['header']
+    auth_format = auth_config['format']
+    resolved_value = resolve_environment_variables(auth_format)
+    
+    return {header_name: resolved_value}
+
+def generate_bearer_token_headers(auth_config):
+    """
+    Generate headers for bearer token authentication.
+    
+    Args:
+        auth_config (dict): Bearer token authentication configuration
+        
+    Returns:
+        dict: HTTP headers with bearer token
+    """
+    token = resolve_environment_variables(auth_config['token'])
+    return {'Authorization': f'Bearer {token}'}
+
+def generate_custom_headers(auth_config):
+    """
+    Generate custom authentication headers.
+    
+    Args:
+        auth_config (dict): Custom authentication configuration
+        
+    Returns:
+        dict: HTTP headers with custom authentication
+    """
+    headers = {}
+    for header_name, header_value in auth_config['headers'].items():
+        resolved_value = resolve_environment_variables(header_value)
+        headers[header_name] = resolved_value
+    
+    return headers
+
+def validate_credentials(auth_config):
+    """
+    Validate that authentication credentials are properly configured.
+    
+    Args:
+        auth_config (dict): Authentication configuration to validate
+        
+    Returns:
+        dict: Validation results with status and any error messages
+    """
+    try:
+        headers = generate_auth_headers(auth_config)
+        missing_values = [k for k, v in headers.items() if not v]
+        
+        if missing_values:
+            return {
+                'valid': False,
+                'error': f"Missing values for headers: {missing_values}"
+            }
+        
+        return {'valid': True}
+    except Exception as e:
+        return {
+            'valid': False,
+            'error': str(e)
+        }
 ```
 
 ## File Modifications Required
 
 ### New Files to Create
-1. `configs/config_loader.py` - Main configuration management
-2. `configs/api_providers.py` - API provider implementations
-3. `configs/auth_manager.py` - Authentication handling
-4. `configs/target_manager.py` - Target configuration management
-5. `configs/validator.py` - Configuration validation
-6. `configs/env_resolver.py` - Environment variable resolution
+1. `configs/config_loader.py` - Main configuration loading functions
+2. `configs/api_providers.py` - API provider formatting functions
+3. `configs/auth_manager.py` - Authentication handling functions
+4. `configs/target_manager.py` - Target configuration functions
+5. `configs/validator.py` - Configuration validation functions
+6. `configs/env_resolver.py` - Environment variable resolution functions
 7. `configs/migration.py` - Migration from old config format
 8. `tests/test_config_system.py` - Comprehensive config system tests
 9. `configs/templates/` - Configuration templates for common scenarios
 
 ### Existing Files to Modify
 1. `configs/config.py` - Replace with new configuration loader
-2. `during_attack/run_fuzz_attack.py` - Use new target management system
+2. `during_attack/run_fuzz_attack.py` - Use new target management functions
 3. `tests/test_calling_apis.py` - Update for new configuration system
 4. `ablitafuzzer.py` - Add configuration management CLI commands
-5. `pre_attack/pre_attack_functions.py` - Use new API provider system
+5. `pre_attack/pre_attack_functions.py` - Use new API provider functions
 6. `post_attack/analyzers/llm_results_analyzer.py` - Use new config for analyzer models
 7. `README.md` - Update with new configuration documentation
 
@@ -381,11 +737,11 @@ ablitafuzzer fuzz --environment <env>      # Use specific environment
 ## Testing Requirements
 
 ### Unit Tests
-- Configuration file parsing and validation
-- Environment variable resolution
-- API provider request/response formatting
-- Authentication header generation
-- Target connectivity testing
+- Configuration file parsing and validation functions
+- Environment variable resolution functions
+- API provider request/response formatting functions
+- Authentication header generation functions
+- Target connectivity testing functions
 - Error handling for malformed configurations
 
 ### Integration Tests
@@ -405,13 +761,13 @@ ablitafuzzer fuzz --environment <env>      # Use specific environment
 ## Migration Strategy
 
 ### Phase 1: Core Infrastructure
-1. Implement configuration loading and validation system
-2. Create API provider abstraction layer
-3. Implement authentication management
+1. Implement configuration loading and validation functions
+2. Create API provider formatting and parsing functions
+3. Implement authentication management functions
 4. Build configuration templates
 
 ### Phase 2: Integration
-1. Update existing modules to use new configuration system
+1. Update existing modules to use new configuration functions
 2. Implement CLI configuration management commands
 3. Create migration utility from old hardcoded approach
 4. Add comprehensive error handling and user feedback
