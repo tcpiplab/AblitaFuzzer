@@ -15,6 +15,8 @@ from configs.validator import (validate_configuration_file, validate_environment
                               get_configuration_recommendations)
 from configs.migration import (migrate_legacy_config, create_default_config_from_template,
                              get_migration_status)
+from attack_engine.session_manager import (list_sessions, get_session_statistics, 
+                                          delete_session, archive_completed_sessions)
 from colorama import init, Fore
 
 # TODO: Move this to main() and test if it still works correctly
@@ -277,6 +279,167 @@ def handle_targets_health(args):
         print(f"{Fore.RED}[!] Error generating health report: {e}")
 
 
+# Session management handlers
+def handle_session_list(args):
+    """Handle the session list command."""
+    try:
+        sessions = list_sessions(status_filter=args.status)
+        
+        if not sessions:
+            print(f"{Fore.YELLOW}[!] No attack sessions found")
+            if args.status:
+                print(f"    (filtered by status: {args.status})")
+            return
+        
+        print(f"{Fore.GREEN}Attack Sessions:")
+        for session in sessions:
+            status_color = {
+                'created': Fore.CYAN,
+                'in_progress': Fore.YELLOW, 
+                'completed': Fore.GREEN
+            }.get(session['status'], Fore.WHITE)
+            
+            print(f"  {session['session_id'][:8]}... - {session['session_name']}")
+            print(f"    Status: {status_color}{session['status']}{Fore.RESET}")
+            print(f"    Progress: {session['progress']['completed']}/{session['progress']['total']} completed")
+            
+            # Format creation time
+            import datetime
+            created_time = datetime.datetime.fromtimestamp(session['created_at'])
+            print(f"    Created: {created_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            
+            if 'target_info' in session:
+                target_info = session['target_info']
+                print(f"    Target: {target_info['provider']} - {target_info['model']}")
+            
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error listing sessions: {e}")
+
+
+def handle_session_status(args):
+    """Handle the session status command."""
+    try:
+        stats = get_session_statistics(args.session_id)
+        session_info = stats['session_info']
+        progress = stats['progress']
+        timing = stats.get('timing', {})
+        
+        print(f"{Fore.GREEN}Session Status: {session_info['name']}")
+        print(f"ID: {session_info['id']}")
+        print(f"Status: {session_info['status']}")
+        
+        # Progress information
+        print(f"\n{Fore.CYAN}Progress:")
+        print(f"  Total prompts: {progress['total']}")
+        print(f"  Completed: {progress['completed']}")
+        print(f"  Failed: {progress['failed']}")
+        print(f"  Remaining: {progress['remaining']}")
+        print(f"  Success rate: {progress['success_rate']:.2%}")
+        
+        # Timing information
+        if timing.get('start_time'):
+            import datetime
+            start_time = datetime.datetime.fromtimestamp(timing['start_time'])
+            print(f"\n{Fore.CYAN}Timing:")
+            print(f"  Started: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            
+            if timing.get('end_time'):
+                end_time = datetime.datetime.fromtimestamp(timing['end_time'])
+                print(f"  Completed: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"  Duration: {timing.get('total_duration', 0):.2f}s")
+            
+            if timing.get('average_response_time'):
+                print(f"  Avg response time: {timing['average_response_time']:.2f}s")
+        
+        # Performance information
+        if 'performance' in stats:
+            perf = stats['performance']
+            print(f"\n{Fore.CYAN}Performance:")
+            print(f"  Min response time: {perf['min_response_time']:.2f}s")
+            print(f"  Max response time: {perf['max_response_time']:.2f}s")
+            print(f"  Average response time: {perf['average_response_time']:.2f}s")
+        
+        # Error analysis
+        if 'error_analysis' in stats:
+            error_analysis = stats['error_analysis']
+            print(f"\n{Fore.RED}Errors:")
+            print(f"  Total errors: {error_analysis['total_errors']}")
+            print(f"  Error rate: {error_analysis['error_rate']:.2%}")
+            
+            if error_analysis['error_types']:
+                print(f"  Error types:")
+                for error_type, count in error_analysis['error_types'].items():
+                    print(f"    {error_type}: {count}")
+        
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error getting session status: {e}")
+
+
+def handle_session_resume(args):
+    """Handle the session resume command."""
+    try:
+        from during_attack.run_fuzz_attack import run_fuzz_attack
+        
+        # Set resume session on args and call main attack function
+        args.resume_session = args.session_id
+        
+        print(f"{Fore.CYAN}[*] Resuming attack session: {args.session_id}")
+        run_fuzz_attack(args)
+        
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error resuming session: {e}")
+
+
+def handle_session_delete(args):
+    """Handle the session delete command."""
+    try:
+        session_id = args.session_id
+        
+        # Confirmation unless --confirm flag is used
+        if not args.confirm:
+            try:
+                # Show session info first
+                stats = get_session_statistics(session_id)
+                session_info = stats['session_info']
+                print(f"Session: {session_info['name']} ({session_info['id']})")
+                print(f"Status: {session_info['status']}")
+                
+                response = input(f"\n{Fore.YELLOW}Are you sure you want to delete this session? (y/N): ")
+                if response.lower() not in ['y', 'yes']:
+                    print(f"{Fore.CYAN}[*] Session deletion cancelled")
+                    return
+            except:
+                # Session might not exist, but still ask for confirmation
+                response = input(f"\n{Fore.YELLOW}Are you sure you want to delete session {session_id}? (y/N): ")
+                if response.lower() not in ['y', 'yes']:
+                    print(f"{Fore.CYAN}[*] Session deletion cancelled")
+                    return
+        
+        # Delete the session
+        if delete_session(session_id):
+            print(f"{Fore.GREEN}[+] Session {session_id} deleted successfully")
+        else:
+            print(f"{Fore.RED}[!] Session {session_id} not found")
+        
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error deleting session: {e}")
+
+
+def handle_session_clean(args):
+    """Handle the session clean command."""
+    try:
+        days = args.days
+        archived_count = archive_completed_sessions(older_than_days=days)
+        
+        if archived_count > 0:
+            print(f"{Fore.GREEN}[+] Archived {archived_count} completed sessions older than {days} days")
+        else:
+            print(f"{Fore.YELLOW}[*] No sessions found to archive")
+        
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error cleaning sessions: {e}")
+
+
 def setup_arguments():
     parser = argparse.ArgumentParser(description='AblitaFuzzer')
 
@@ -396,6 +559,43 @@ def setup_arguments():
     targets_health.add_argument('--config-path', help='Path to configuration file')
     targets_health.add_argument('--environment', help='Environment to use')
     targets_health.set_defaults(func=handle_targets_health)
+
+    # Session management commands
+    parser_session = subparsers.add_parser('session', help='Attack session management commands')
+    session_subparsers = parser_session.add_subparsers(dest='session_command', help='Session commands')
+    
+    # session list
+    session_list = session_subparsers.add_parser('list', help='List attack sessions')
+    session_list.add_argument('--status', help='Filter by session status (created, in_progress, completed)')
+    session_list.set_defaults(func=handle_session_list)
+    
+    # session status
+    session_status = session_subparsers.add_parser('status', help='Show session progress and statistics')
+    session_status.add_argument('session_id', help='Session ID to check')
+    session_status.set_defaults(func=handle_session_status)
+    
+    # session resume
+    session_resume = session_subparsers.add_parser('resume', help='Resume interrupted session')
+    session_resume.add_argument('session_id', help='Session ID to resume')
+    session_resume.set_defaults(func=handle_session_resume)
+    
+    # session delete
+    session_delete = session_subparsers.add_parser('delete', help='Delete attack session')
+    session_delete.add_argument('session_id', help='Session ID to delete')
+    session_delete.add_argument('--confirm', action='store_true', help='Skip confirmation prompt')
+    session_delete.set_defaults(func=handle_session_delete)
+    
+    # session clean
+    session_clean = session_subparsers.add_parser('clean', help='Clean up old completed sessions')
+    session_clean.add_argument('--days', type=int, default=30, help='Archive sessions older than N days')
+    session_clean.set_defaults(func=handle_session_clean)
+    
+    # Enhanced fuzz command with new attack engine options
+    parser_fuzz.add_argument('--workers', type=int, help='Number of concurrent worker threads')
+    parser_fuzz.add_argument('--rate-limit', type=float, help='Rate limit in requests per second')
+    parser_fuzz.add_argument('--session-name', help='Name for attack session')
+    parser_fuzz.add_argument('--target', help='Target configuration name')
+    parser_fuzz.add_argument('--resume-session', help='Resume specific session ID')
 
     return parser
 
