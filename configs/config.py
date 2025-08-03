@@ -173,6 +173,22 @@ ANALYZER_MODEL_API_URL = get_analyzer_model_api_url()
 ANALYZER_MODEL_API_KEY = get_analyzer_model_api_key()
 ANALYZER_MODEL_NAME = get_analyzer_model_name()
 
+# Attack Engine Configuration
+ATTACK_ENGINE_CONFIG = {
+    'max_workers': 5,
+    'default_rate_limit': 10.0,  # requests per second
+    'retry_attempts': 3,
+    'retry_base_delay': 1.0,
+    'retry_max_delay': 60.0,
+    'circuit_breaker_threshold': 5,
+    'circuit_breaker_recovery_timeout': 60.0,
+    'progress_update_interval': 1.0,
+    'session_auto_cleanup_days': 30,
+    'max_concurrent_targets': 3,
+    'default_request_timeout': 30.0,
+    'response_time_samples': 100
+}
+
 # Static configuration values
 TARGET_PROMPT_STYLE = "openai_chatgpt"
 PROMPT_STYLES_FILE_PATH = 'inputs/prompt-styles/prompt-styles.json'
