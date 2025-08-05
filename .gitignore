@@ -28,3 +28,16 @@ __pycache__/
 .Python
 .env
 .coverage
+/reports/Analysis_Results_2025-08-04-18-50.json
+/reports/Analysis_Results_2025-08-04-18-59.json
+/reports/Executive_Report_2025-08-04-18-50.html
+/reports/Executive_Report_2025-08-04-18-50.md
+/reports/Executive_Report_2025-08-04-18-59.html
+/reports/Executive_Report_2025-08-04-18-59.md
+/reports/Technical_Report_2025-08-04-18-50.html
+/reports/Technical_Report_2025-08-04-18-50.md
+/reports/Technical_Report_2025-08-04-18-59.html
+/reports/Technical_Report_2025-08-04-18-59.md
+/reports/Vulnerabilities_2025-08-04-18-50.csv
+/reports/Vulnerabilities_2025-08-04-18-59.csv
+/reports/
