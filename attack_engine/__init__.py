@@ -47,7 +47,8 @@ from .attack_coordinator import (
     coordinate_attack_campaign,
     create_attack_function,
     normalize_attack_response,
-    handle_attack_error
+    handle_attack_error,
+    execute_multi_target_campaign
 )
 
 __version__ = "1.0.0"
@@ -87,5 +88,6 @@ __all__ = [
     "coordinate_attack_campaign",
     "create_attack_function",
     "normalize_attack_response",
-    "handle_attack_error"
+    "handle_attack_error",
+    "execute_multi_target_campaign"
 ]

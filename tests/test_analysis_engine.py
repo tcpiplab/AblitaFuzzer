@@ -28,7 +28,7 @@ from analysis_engine.vulnerability_classifier import (
     analyze_response_content,
     detect_bypass_success,
     map_to_owasp_llm_top10,
-    calculate_confidence_score
+    calculate_classification_confidence
 )
 
 from analysis_engine.risk_calculator import (
@@ -47,8 +47,8 @@ from analysis_engine.analysis_coordinator import (
 from analysis_engine.remediation_advisor import (
     get_base_recommendations_by_owasp_category,
     get_technique_specific_recommendations,
-    calculate_implementation_effort,
-    prioritize_recommendations
+    calculate_remediation_priority,
+    estimate_remediation_timeline
 )
 
 
@@ -137,7 +137,7 @@ class TestVulnerabilityClassifier(unittest.TestCase):
             'response_analysis_confidence': 0.7
         }
         
-        confidence = calculate_confidence_score(factors)
+        confidence = calculate_classification_confidence(factors, {})
         
         self.assertIsInstance(confidence, float)
         self.assertGreaterEqual(confidence, 0.0)
@@ -403,34 +403,25 @@ class TestRemediationAdvisor(unittest.TestCase):
         titles = [rec['title'] for rec in recommendations]
         self.assertTrue(any('input validation' in title.lower() for title in titles))
     
-    def test_calculate_implementation_effort(self):
-        """Test implementation effort calculation."""
-        recommendation = {
-            'title': 'Implement Input Validation',
-            'complexity': 'medium',
-            'scope': 'system-wide'
-        }
+    def test_calculate_remediation_priority(self):
+        """Test remediation priority calculation."""
+        priority = calculate_remediation_priority(self.vulnerability, self.target_context)
         
-        effort = calculate_implementation_effort(recommendation, self.target_context)
-        
-        self.assertIn('effort_score', effort)
-        self.assertIn('estimated_hours', effort)
-        self.assertIn('cost_estimate', effort)
-        self.assertIn('timeline', effort)
+        self.assertIsInstance(priority, str)
+        self.assertIn(priority, ['Immediate', 'High', 'Medium', 'Low'])
     
-    def test_prioritize_recommendations(self):
-        """Test recommendation prioritization."""
+    def test_estimate_remediation_timeline(self):
+        """Test remediation timeline estimation."""
         recommendations = [
-            {'title': 'High Impact Fix', 'priority': 'high', 'effort_score': 2},
-            {'title': 'Low Impact Fix', 'priority': 'low', 'effort_score': 5},
-            {'title': 'Medium Impact Fix', 'priority': 'medium', 'effort_score': 3}
+            {'title': 'Input Validation', 'complexity': 'Medium', 'scope': 'System-wide'},
+            {'title': 'Output Filtering', 'complexity': 'Low', 'scope': 'Component'}
         ]
         
-        prioritized = prioritize_recommendations(recommendations, self.vulnerability, self.target_context)
+        timeline = estimate_remediation_timeline(recommendations, self.target_context)
         
-        self.assertEqual(len(prioritized), 3)
-        # High priority, low effort should be first
-        self.assertEqual(prioritized[0]['title'], 'High Impact Fix')
+        self.assertIsInstance(timeline, dict)
+        self.assertIn('total_timeline_days', timeline)
+        self.assertIn('phase_breakdown', timeline)
     
     def test_generate_remediation_recommendations(self):
         """Test complete remediation recommendation generation."""

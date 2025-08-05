@@ -1,5 +1,5 @@
 import argparse
-from post_attack.analyzers import run_all_analyzers
+from post_attack.analyzers.run_all_analyzers import run_all_analyzers
 from post_attack.analyzers.llm_results_analyzer import analyze_campaign_results, generate_comprehensive_reports
 from post_attack.analyzers.nlp_results_analyzer import save_classification_results, generate_enhanced_nlp_report
 from reporting_engine import generate_executive_report, generate_technical_report, export_to_json, export_to_csv

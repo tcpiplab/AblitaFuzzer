@@ -62,12 +62,12 @@ from .analysis_coordinator import (
 # Remediation Advisory Functions
 from .remediation_advisor import (
     generate_remediation_recommendations,
-    create_remediation_roadmap,
+    create_implementation_roadmap,
     calculate_remediation_priority,
     estimate_remediation_timeline,
     generate_implementation_guidance,
-    create_testing_procedures,
-    generate_monitoring_strategies,
+    generate_testing_procedures,
+    generate_monitoring_strategy,
     assess_remediation_feasibility,
     create_cost_benefit_analysis
 )
@@ -112,7 +112,7 @@ __all__ = [
     
     # Remediation guidance
     'generate_remediation_recommendations',
-    'create_remediation_roadmap',
+    'create_implementation_roadmap',
     'generate_implementation_guidance',
     
     # Configuration
