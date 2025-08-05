@@ -1,12 +1,22 @@
 # AblitaFuzzer
 ================
 
-**AblitaFuzzer is still in alpha. Expect bugs for now.**
+**Professional LLM Security Assessment Tool**
+
+*Version 1.0.0-beta - Now with Professional Analysis & Reporting Engine*
 
 ## About AblitaFuzzer
 
-AblitaFuzzer is a simple command-line tool designed for blackbox LLM API fuzzing against chatbots that are hosted at a 
-URL, whether in the cloud, on-premises, or even on localhost. 
+AblitaFuzzer is a comprehensive command-line security assessment tool designed for professional LLM vulnerability 
+assessment. It combines advanced blackbox API fuzzing with enterprise-grade analysis and reporting capabilities, making it suitable for penetration testing, security audits, and compliance assessments.
+
+### 🎯 Key Capabilities
+
+- **Professional Vulnerability Analysis**: OWASP LLM Top 10 classification with quantitative risk scoring
+- **Enterprise Reporting**: Executive summaries, technical reports, and compliance documentation
+- **Advanced Attack Engine**: Concurrent session management with rate limiting and retry logic
+- **Multi-Format Exports**: Markdown, HTML, JSON, CSV with evidence chain documentation
+- **Compliance Integration**: SOC2, ISO27001, NIST, PCI_DSS reporting frameworks 
 
 <div style="text-align:center"><img width="33%" src="assets/ablitafuzzer.png" /></div>
 
@@ -38,7 +48,7 @@ Or, depending on your OS...
 python3 -m pip3 install -r requirements.txt
 ```
 
-#### Configure local hostnames
+#### Configure local hostnames (optional, for lab scenarios)
 
 AblitaFuzzer uses custom local hostnames to improve configuration flexibility. Add the following entries to your `/etc/hosts` file:
 
@@ -120,16 +130,38 @@ python3 ablitafuzzer.py cache clear [dataset_name]
 
 The tool automatically downloads and caches datasets from established research sources like AdvBench when needed. Datasets are cached locally in `~/.ablitafuzzer/cache/` to avoid repeated downloads.
 
-#### Analyze the results
+### 🎯 Professional Analysis & Reporting
+
+AblitaFuzzer now includes a comprehensive professional analysis and reporting engine:
+
+#### Generate Professional Security Assessment Reports
+
+```bash
+# Generate comprehensive executive and technical reports
+python3 ablitafuzzer.py report generate --target-name "Production API" --criticality high --compliance SOC2 ISO27001
+
+# Export results in multiple formats
+python3 ablitafuzzer.py report export json --output security_assessment.json
+python3 ablitafuzzer.py report export csv --output vulnerabilities.csv
+
+# Run enhanced NLP classification with professional analysis
+python3 ablitafuzzer.py analysis classify --generate-report
+```
+
+#### Legacy Analysis (still available)
 
 ```bash
 python3 ablitafuzzer.py analyze
 ```
 
-- Now you can view a Markdown file containing the results and analysis commentary by manually opening the newest file (the one with the most recent timestamp in its name) in the `results/` directory. For example:
-  - `Ablitafuzzer_Results_2024-07-20-10-00.md`
-- Note that you can also correlate individual malicious prompt requests from the attack by searching in your proxy history for the globally unique header for that attack request. For example:
-  - `AblitaFuzzer-Attack-ID: 2024-07-20-09-55-00-284a0585-e147-456b-b8d2-0eebca61f5f7`
+#### Professional Report Features
+
+- **Executive Reports**: Business-focused summaries with risk assessment and strategic recommendations
+- **Technical Reports**: Detailed vulnerability analysis with OWASP LLM Top 10 classification
+- **Compliance Documentation**: SOC2, ISO27001, NIST, PCI_DSS compliance mapping
+- **Evidence Packages**: Legal-grade evidence documentation with chain of custody
+- **Multi-Format Export**: Markdown, HTML, JSON, CSV formats for different stakeholders
+- **Quantitative Risk Scoring**: CVSS-style risk assessment with business impact analysis
 
 ### Why AblitaFuzzer?
 
@@ -180,84 +212,189 @@ jailbreaks, etc. - and will ask the abliterated model to use them as examples to
 prompts, by default 20. AblitaFuzzer will then send those prompts to the target LLM API, and will record the responses. 
 Once all the responses are received, AblitaFuzzer will exit. Then you can use its analysis tools to examine the responses.
 
-### Analyzing the results - some tools, some manual analysis
+### 🔬 Advanced Analysis Capabilities
 
-AblitaFuzzer includes some simple analysis tools. But the verbose and non-deterministic nature of LLMs means that 
-you'll have to do a combination of programmatic and manual analysis to figure out which attacks succeeded and which 
-attacks were blocked. Results are stored as JSON files in the `results` directory.
+AblitaFuzzer provides both automated professional analysis and manual review tools:
+
+#### Professional Analysis Engine
+- **OWASP LLM Top 10 Classification**: Automatic mapping to standard vulnerability categories
+- **Pattern-Based Detection**: Advanced recognition of jailbreak, prompt injection, and role manipulation attacks
+- **Confidence Scoring**: Weighted confidence assessment with false positive filtering
+- **Risk Quantification**: Business impact assessment considering system criticality and data classification
+- **Remediation Recommendations**: Actionable guidance with implementation timelines and cost estimates
+
+#### Session Management
+```bash
+# List active attack sessions
+python3 ablitafuzzer.py session list
+
+# Check session progress and statistics
+python3 ablitafuzzer.py session status <session-id>
+
+# Resume interrupted sessions
+python3 ablitafuzzer.py session resume <session-id>
+```
+
+#### Configuration Management
+```bash
+# Initialize configuration from templates
+python3 ablitafuzzer.py config init --template enterprise
+
+# Validate current configuration
+python3 ablitafuzzer.py config validate
+
+# Test target connectivity
+python3 ablitafuzzer.py targets health
+```
 
 
-### Best practices for using AblitaFuzzer
+## Best Practices for Professional Assessment
 
-- **Proxy everything** through Burp Suite or ZAP or another proxy tool. This will enable you to see the actual requests 
-  that are being sent to the target model's API, and allow you to modify them as needed. More importantly, this will 
-  enable you to provide the exact prompt, response, and timestamp of anything that your client (the owner of the LLM 
-  you're attacking) might ask about. Just add the `--proxy` option when you run `fuzz` or `test`, e.g. `--proxy 127.0.0.1:8080`.
-- **Work iteratively**. Start with sending a small and diverse set of attack prompts. Analyze the successes, then 
-  gradually increase the number of attack prompts as you become more comfortable.
-- **Don't get stuck on using AblitaFuzzer**. Switch to manual attacks or a more sophisticated tool like Garak or 
-  PyRIT once you have exhausted the capabilities of AblitaFuzzer. For example, the model you're attacking might be 
-  susceptible to something like contextual manipulation, which AblitaFuzzer does not support.
-- **Don't pentest in Production** Use AblitaFuzzer in a controlled environment. This tool is not intended for use 
-  against production systems.
-- **Get permission in writing** before you ever send an attack prompt. This is a good idea in general, but especially important when using a tool like AblitaFuzzer.
-- **Read the disclaimers** below.
+### Security Testing Protocol
+- **Get Written Authorization**: Always obtain explicit written permission before conducting any security assessment
+- **Use Controlled Environments**: Never test against production systems without proper change management
+- **Document Everything**: Use proxy tools (Burp Suite, ZAP) to capture all requests and responses for evidence
+- **Follow Legal Guidelines**: Ensure compliance with applicable laws and organizational policies
+
+### Technical Best Practices
+- **Start with Reconnaissance**: Use `config validate` and `targets health` to understand the target environment
+- **Work Iteratively**: Begin with small, diverse attack sets and expand based on initial findings
+- **Leverage Professional Reports**: Use executive summaries for stakeholder communication and technical reports for remediation
+- **Session Management**: Use persistent sessions for large assessments and resume capability for interrupted tests
+- **Compliance Integration**: Configure appropriate compliance frameworks for your assessment scope
+
+### Enterprise Assessment Workflow
+1. **Planning**: Configure target contexts with appropriate criticality and compliance requirements
+2. **Execution**: Run structured attack campaigns with session management
+3. **Analysis**: Generate professional reports with OWASP LLM Top 10 classification
+4. **Reporting**: Deliver executive summaries and technical reports to appropriate stakeholders
+5. **Remediation**: Provide actionable recommendations with implementation guidance
+6. **Validation**: Re-test after remediation to verify fixes
+
+### Integration with Other Tools
+- **Complement Manual Testing**: Use AblitaFuzzer for broad vulnerability discovery, then focus manual efforts
+- **Integrate with SIEM/SOAR**: Export JSON/CSV results for integration with security platforms
+- **Compliance Programs**: Use compliance reports for audit evidence and risk management
+- **Continuous Security**: Integrate into CI/CD pipelines for ongoing LLM security validation
 
 
-### Disclaimers
+## Important Disclaimers and Legal Notice
 
-AblitaFuzzer is a proof-of-concept tool and is not intended for use against a production environment. Also, as with 
-all offensive security tools, do not point this tool at an API unless you have explicit, written permission to attack 
-that system. 
+### Professional Use Only
+AblitaFuzzer is designed for professional security assessment, penetration testing, and research purposes. While it includes enterprise-grade analysis and reporting capabilities, users must:
 
-Use at your own risk. Using an abliterated LLM to attack another LLM is inherently dangerous and 
-unpredictable. 
+- **Obtain Written Authorization**: Never use this tool without explicit written permission from system owners
+- **Follow Legal Requirements**: Ensure compliance with all applicable laws, regulations, and organizational policies
+- **Use Controlled Environments**: Avoid testing production systems without proper change management and approval
+- **Maintain Professional Standards**: Use appropriate disclosure and remediation practices
 
-This tool is intended for use in a controlled environment for research and educational purposes only.
+### Technical Risks and Considerations
+**Inherent Unpredictability**: Using abliterated LLMs to generate attack content is inherently unpredictable and may produce:
 
-Also, it is a really good idea for you to, in writing, inform your client (the owner of the LLM you are attacking) 
-that you will be using a tool with the following intentional properties and characteristics, depending on how you 
-use and what seed-prompts you choose: 
+1. **Novel Attack Vectors**: Unexpected malicious prompt injections and jailbreak attempts
+2. **Harmful Content**: Toxic, offensive, biased, harmful, or inappropriate language in both prompts and responses
+3. **System Impact**: Potential performance impact on target systems during assessment
+4. **Data Sensitivity**: Generated content may contain or expose sensitive information
 
-1. The ability to compose and send new and unexpected malicious prompt injections and jailbreak attempts.
-2. The ability to creatively experiment with new an unexpected ways to induce the target LLM to output toxic, 
-   offensive, biased, harmful, hateful, or otherwise ugly language. This language could show up in the attack 
-   prompts too.
+### Client Communication Requirements
+When conducting professional assessments, inform clients in writing about:
+
+- The automated generation of novel attack prompts using AI systems
+- The potential for generating offensive or harmful content during testing
+- The evidence collection and retention practices for assessment documentation
+- The scope and limitations of the security assessment methodology
+- The professional reporting and remediation recommendation process
+
+### Limitation of Liability
+This tool is provided "as-is" for professional security assessment purposes. Users assume all risks associated with its use and are responsible for:
+
+- Obtaining proper authorization and following legal requirements
+- Implementing appropriate safeguards and controls during assessments
+- Managing and securing any sensitive data collected during testing
+- Following responsible disclosure practices for identified vulnerabilities
+
+**Use at your own risk and in accordance with applicable laws and professional standards.**
 
 ## Features
 ------------
 
-* Fuzzing: AblitaFuzzer generates a large number of malicious prompts and probes the target model with them to identify potential vulnerabilities.
-* Analysis: The tool analyzes the responses from the target model to identify patterns and trends that may indicate security issues.
-* Classification: AblitaFuzzer classifies the responses into categories such as agreement, refusal, and confusion to help identify potential security threats.
-* Toxicity and Hate Speech Analysis: The tool analyzes the responses for toxicity and hate speech to identify potential 
-  issues like lack of output filtering guardrails in the target LLM.
+### Core Attack Engine
+* **Advanced Fuzzing**: Generates novel malicious prompts using abliterated models to identify potential vulnerabilities
+* **Concurrent Execution**: Multi-threaded attack campaigns with configurable rate limiting and retry logic
+* **Session Management**: Persistent attack sessions with resume capability and progress tracking
+* **Proxy Integration**: Full support for Burp Suite, ZAP, and other security testing proxies
 
-## Usage
+### Professional Analysis Engine
+* **OWASP LLM Top 10 Mapping**: Industry-standard vulnerability classification with severity scoring
+* **Pattern Recognition**: Advanced detection of jailbreak, prompt injection, role manipulation, and context manipulation attacks
+* **Risk Assessment**: Quantitative risk scoring with business impact analysis and exploitability assessment
+* **Confidence Analysis**: Weighted confidence scoring with false positive filtering and validation
+* **Trend Analysis**: Historical attack pattern analysis and risk trending over time
+
+### Enterprise Reporting
+* **Executive Summaries**: Business-focused reports with strategic risk assessment and recommendations
+* **Technical Documentation**: Detailed vulnerability analysis with evidence documentation and remediation guidance
+* **Compliance Reporting**: SOC2, ISO27001, NIST, PCI_DSS compliance framework integration
+* **Evidence Management**: Legal-grade evidence packages with chain of custody documentation
+* **Multi-Format Export**: Markdown, HTML, PDF, JSON, CSV exports for different stakeholder needs
+
+### Advanced Capabilities
+* **Dataset Management**: Integrated research dataset downloading and caching system
+* **Configuration Management**: Template-based configuration with environment-specific settings
+* **Target Health Monitoring**: Connectivity testing and performance monitoring for target systems
+* **Enhanced NLP Analysis**: Toxicity, hate speech, and harmful content detection with transformer models
+
+## 📖 Usage
 ---------
 
-To use AblitaFuzzer, simply run the `ablitafuzzer.py` file and specify the desired action using command-line arguments. 
-The available actions are:
+AblitaFuzzer provides a comprehensive command-line interface for professional LLM security assessment:
 
 ```shell
-python3 ablitafuzzer.py 
-usage: ablitafuzzer.py [-h] [--version] {analyze,fuzz,test,datasets,cache} ...
+python3 ablitafuzzer.py --help
+usage: ablitafuzzer.py [-h] [--version] [--verbose]
+                      {analyze,fuzz,test,datasets,cache,config,targets,session,report,analysis} ...
 
-AblitaFuzzer
+AblitaFuzzer - Professional LLM Security Assessment Platform
 
 options:
   -h, --help           show this help message and exit
   --version            Show version and exit
+  --verbose            Print more information during runtime
 
 subcommands:
-  valid subcommands
+  analyze            Legacy analysis from most recent fuzzing attack
+  fuzz               Execute fuzzing attack campaigns
+  test               Test API connectivity without fuzzing
+  datasets           Dataset management and caching
+  cache              Cache management for datasets
+  config             Configuration management and validation
+  targets            Target system management and health monitoring
+  session            Attack session management and statistics
+  report             Professional analysis and reporting engine
+  analysis           Enhanced NLP analysis with professional classification
+```
 
-  {analyze,fuzz,test,datasets,cache}  additional help
-    analyze            Analyze results from the most recent fuzzing attack
-    fuzz               Fuzz the target model
-    test               Test calling both APIs but do not fuzz
-    datasets           Dataset management commands
-    cache              Cache management commands
+### Professional Reporting Commands
+
+```bash
+# Generate comprehensive security assessment reports
+python3 ablitafuzzer.py report generate [options]
+  --target-name          Target system name for report
+  --data-classification  Data classification level (public/internal/confidential/restricted)
+  --criticality         System criticality (low/medium/high/critical)
+  --compliance          Compliance frameworks (SOC2, ISO27001, NIST, PCI_DSS)
+  --user-count          Estimated user count for business impact assessment
+  --exposure            System exposure level (internal/external/public)
+
+# Export analysis results in multiple formats
+python3 ablitafuzzer.py report export {json,csv} [options]
+  --output              Custom output file path
+  --results-file        Specific results file to export
+
+# Enhanced NLP classification with professional analysis
+python3 ablitafuzzer.py analysis classify [options]
+  --generate-report     Generate enhanced analysis report
+  --legacy-only         Use only legacy classification methods
 ```
 
 ## Requirements
@@ -283,8 +420,7 @@ AblitaFuzzer is licensed under the GPLv3 License. See the `LICENSE` file for det
 ## Acknowledgments
 ----------------
 
-This very simple project was inspired by several other projects, academic researchers, and tools 
-focusing on LLM security and attacks. Some of the main influences came from:
+This professional security assessment platform builds upon research and tools from the LLM security community. Key influences and inspirations include:
 
 - [Uncensor any LLM with abliteration](https://huggingface.co/blog/mlabonne/abliteration)
 - FailSpy's [abliterated-v3 collection](https://huggingface.co/collections/failspy/abliterated-v3-664a8ad0db255eefa7d0012b)

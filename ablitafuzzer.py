@@ -1,5 +1,8 @@
 import argparse
 from post_attack.analyzers import run_all_analyzers
+from post_attack.analyzers.llm_results_analyzer import analyze_campaign_results, generate_comprehensive_reports
+from post_attack.analyzers.nlp_results_analyzer import save_classification_results, generate_enhanced_nlp_report
+from reporting_engine import generate_executive_report, generate_technical_report, export_to_json, export_to_csv
 from during_attack.run_fuzz_attack import run_fuzz_attack
 from tests.run_all_test_functions import run_all_test_functions
 from utilities.dataset_registry import (print_all_datasets, print_dataset_info, 
@@ -18,6 +21,7 @@ from configs.migration import (migrate_legacy_config, create_default_config_from
 from attack_engine.session_manager import (list_sessions, get_session_statistics, 
                                           delete_session, archive_completed_sessions)
 from colorama import init, Fore
+import os
 
 # TODO: Move this to main() and test if it still works correctly
 # Initialize colorama and set autoreset to True
@@ -440,6 +444,136 @@ def handle_session_clean(args):
         print(f"{Fore.RED}[!] Error cleaning sessions: {e}")
 
 
+# Analysis and Reporting handlers
+def handle_report_generate(args):
+    """Handle the report generate command."""
+    try:
+        import json
+        import configs.config as config
+        
+        print(f"{Fore.CYAN}[*] Generating professional analysis report...")
+        
+        # Load campaign results
+        if args.results_file:
+            results_file = args.results_file
+        else:
+            results_file = config.TEMP_RESULTS_FILE_PATH
+        
+        if not os.path.exists(results_file):
+            print(f"{Fore.RED}[!] Results file not found: {results_file}")
+            print(f"{Fore.YELLOW}[*] Please run an attack campaign first")
+            return
+        
+        with open(results_file, 'r', encoding='utf-8') as f:
+            campaign_data = {'results': json.load(f)}
+        
+        # Set target context
+        target_context = {
+            'name': args.target_name or 'Target LLM System',
+            'type': 'llm',
+            'data_classification': args.data_classification or 'internal',
+            'system_criticality': args.criticality or 'medium',
+            'user_count': args.user_count or 1000,
+            'compliance_requirements': args.compliance or ['SOC2'],
+            'exposure': args.exposure or 'internal'
+        }
+        
+        # Run professional analysis
+        analysis_results = analyze_campaign_results(campaign_data, target_context)
+        
+        # Generate reports
+        output_dir = args.output_dir or 'reports'
+        report_files = generate_comprehensive_reports(analysis_results, output_dir)
+        
+        print(f"{Fore.GREEN}[+] Professional analysis report generated successfully")
+        print(f"{Fore.GREEN}[+] Reports saved to: {output_dir}")
+        
+        for report_type, file_path in report_files.items():
+            print(f"{Fore.GREEN}  - {report_type}: {file_path}")
+        
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error generating report: {e}")
+
+
+def handle_report_export(args):
+    """Handle the report export command."""
+    try:
+        import json
+        import configs.config as config
+        import os
+        
+        print(f"{Fore.CYAN}[*] Exporting analysis results to {args.format} format...")
+        
+        # Load campaign results
+        if args.results_file:
+            results_file = args.results_file
+        else:
+            results_file = config.TEMP_RESULTS_FILE_PATH
+        
+        if not os.path.exists(results_file):
+            print(f"{Fore.RED}[!] Results file not found: {results_file}")
+            return
+        
+        with open(results_file, 'r', encoding='utf-8') as f:
+            campaign_data = {'results': json.load(f)}
+        
+        # Set target context
+        target_context = {
+            'name': args.target_name or 'Target LLM System',
+            'type': 'llm',
+            'data_classification': 'internal',
+            'system_criticality': 'medium'
+        }
+        
+        # Run analysis if needed
+        analysis_results = analyze_campaign_results(campaign_data, target_context)
+        
+        # Set output file
+        if args.output:
+            output_file = args.output
+        else:
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+            output_file = f"reports/Export_{timestamp}.{args.format}"
+        
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        
+        # Export based on format
+        if args.format == 'json':
+            export_to_json(analysis_results, output_file)
+        elif args.format == 'csv':
+            vulnerabilities = analysis_results.get('vulnerabilities', [])
+            export_to_csv(vulnerabilities, output_file)
+        else:
+            print(f"{Fore.RED}[!] Unsupported export format: {args.format}")
+            return
+        
+        print(f"{Fore.GREEN}[+] Results exported to: {output_file}")
+        
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error exporting results: {e}")
+
+
+def handle_analysis_classify(args):
+    """Handle the analysis classify command."""
+    try:
+        print(f"{Fore.CYAN}[*] Running enhanced NLP classification...")
+        
+        # Run enhanced classification
+        use_professional = not args.legacy_only
+        save_classification_results(use_professional=use_professional)
+        
+        # Generate enhanced report if requested
+        if args.generate_report:
+            report_file = generate_enhanced_nlp_report(args.output)
+            print(f"{Fore.GREEN}[+] Enhanced NLP report generated: {report_file}")
+        
+        print(f"{Fore.GREEN}[+] Enhanced NLP classification completed")
+        
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error running NLP classification: {e}")
+
+
 def setup_arguments():
     parser = argparse.ArgumentParser(description='AblitaFuzzer')
 
@@ -596,6 +730,45 @@ def setup_arguments():
     parser_fuzz.add_argument('--session-name', help='Name for attack session')
     parser_fuzz.add_argument('--target', help='Target configuration name')
     parser_fuzz.add_argument('--resume-session', help='Resume specific session ID')
+    
+    # Analysis and Reporting commands
+    parser_report = subparsers.add_parser('report', help='Professional analysis and reporting commands')
+    report_subparsers = parser_report.add_subparsers(dest='report_command', help='Reporting commands')
+    
+    # report generate
+    report_generate = report_subparsers.add_parser('generate', help='Generate comprehensive security assessment report')
+    report_generate.add_argument('--results-file', help='Path to results file (defaults to latest)')
+    report_generate.add_argument('--output-dir', default='reports', help='Output directory for reports')
+    report_generate.add_argument('--target-name', help='Target system name for report')
+    report_generate.add_argument('--data-classification', choices=['public', 'internal', 'confidential', 'restricted'], 
+                               help='Data classification level')
+    report_generate.add_argument('--criticality', choices=['low', 'medium', 'high', 'critical'], 
+                               help='System criticality level')
+    report_generate.add_argument('--user-count', type=int, help='Estimated user count')
+    report_generate.add_argument('--compliance', nargs='*', choices=['SOC2', 'ISO27001', 'NIST', 'PCI_DSS'], 
+                               help='Compliance framework requirements')
+    report_generate.add_argument('--exposure', choices=['internal', 'external', 'public'], 
+                               help='System exposure level')
+    report_generate.set_defaults(func=handle_report_generate)
+    
+    # report export
+    report_export = report_subparsers.add_parser('export', help='Export analysis results to different formats')
+    report_export.add_argument('format', choices=['json', 'csv'], help='Export format')
+    report_export.add_argument('--results-file', help='Path to results file (defaults to latest)')
+    report_export.add_argument('--output', help='Output file path')
+    report_export.add_argument('--target-name', help='Target system name')
+    report_export.set_defaults(func=handle_report_export)
+    
+    # Analysis commands
+    parser_analysis = subparsers.add_parser('analysis', help='Enhanced analysis commands')
+    analysis_subparsers = parser_analysis.add_subparsers(dest='analysis_command', help='Analysis commands')
+    
+    # analysis classify
+    analysis_classify = analysis_subparsers.add_parser('classify', help='Run enhanced NLP classification with professional analysis')
+    analysis_classify.add_argument('--legacy-only', action='store_true', help='Use only legacy classification methods')
+    analysis_classify.add_argument('--generate-report', action='store_true', help='Generate enhanced analysis report')
+    analysis_classify.add_argument('--output', help='Output file for report')
+    analysis_classify.set_defaults(func=handle_analysis_classify)
 
     return parser
 
@@ -609,8 +782,9 @@ def main():
     else:
         parser.print_help()
 
-    if args.version:
-        print(f'AblitaFuzzer version 0.7-alpha')
+    if hasattr(args, 'version') and args.version:
+        print(f'AblitaFuzzer version 1.0.0-beta')
+        print(f'Professional Analysis & Reporting Engine')
         exit()
 
 if __name__ == '__main__':
