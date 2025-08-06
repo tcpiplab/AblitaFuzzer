@@ -51,7 +51,7 @@ def test_call_target_model():
 
     # Define the payload
     payload = {
-        "model": "mistral",
+        "model": config.TARGET_MODEL_NAME,
         "messages": [
             {
                 "role": "user",
