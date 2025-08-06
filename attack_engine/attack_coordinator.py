@@ -241,6 +241,10 @@ def normalize_attack_response(
             elif 'text' in choice:
                 normalized['response_text'] = choice['text']
         
+        elif 'message' in raw_response and isinstance(raw_response['message'], dict):
+            # Ollama-style response
+            normalized['response_text'] = raw_response['message'].get('content', '')
+        
         elif 'content' in raw_response:
             # Anthropic-style response
             if isinstance(raw_response['content'], list) and raw_response['content']:

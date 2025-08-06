@@ -38,10 +38,10 @@ def _get_legacy_config():
         'version': '1.0-legacy',
         'providers': {
             'legacy_target': {
-                'type': 'ollama',
-                'base_url': 'http://api.target.local:11434/api/chat',
-                'auth': {'type': 'api_key', 'header': 'Authorization', 'format': 'Bearer ollama'},
-                'models': ['llama3.1:8b']
+                'type': 'ollama_cloud',
+                'base_url': 'https://ollama.com/api/chat',
+                'auth': {'type': 'api_key', 'header': 'Authorization', 'format': 'Bearer {api_key}'},
+                'models': ['gpt-oss:20b']
             },
             'legacy_attacker': {
                 'type': 'ollama_local',
@@ -53,7 +53,7 @@ def _get_legacy_config():
         'targets': {
             'legacy_target': {
                 'provider': 'legacy_target',
-                'model': 'llama3.1:8b',
+                'model': 'gpt-oss:20b',
                 'description': 'Legacy target configuration'
             }
         },
@@ -88,7 +88,7 @@ def get_target_model_api_url():
         target_config = get_target_configuration(config, 'legacy_target')
         return target_config['base_url']
     except:
-        return "http://api.target.local:11434/api/chat"
+        return "https://ollama.com/api/chat"
 
 def get_target_model_name():
     config = _load_config()
@@ -96,7 +96,7 @@ def get_target_model_name():
         target_config = get_target_configuration(config, 'legacy_target')
         return target_config['model']
     except:
-        return "llama3.1:8b"
+        return "gpt-oss:20b"
 
 def get_attack_model_api_url():
     config = _load_config()
