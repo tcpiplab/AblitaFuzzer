@@ -1,3 +1,7 @@
+import warnings
+# Suppress torchvision compatibility warnings that are not relevant to AblitaFuzzer
+warnings.filterwarnings("ignore", category=UserWarning, module="torchvision.io.image")
+
 import argparse
 from post_attack.analyzers.run_all_analyzers import run_all_analyzers
 from post_attack.analyzers.llm_results_analyzer import analyze_campaign_results, generate_comprehensive_reports
@@ -22,6 +26,7 @@ from attack_engine.session_manager import (list_sessions, get_session_statistics
                                           delete_session, archive_completed_sessions)
 from colorama import init, Fore
 import os
+
 
 # TODO: Move this to main() and test if it still works correctly
 # Initialize colorama and set autoreset to True
