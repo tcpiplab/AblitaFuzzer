@@ -44,10 +44,10 @@ def _get_legacy_config():
                 'models': ['llama3.1:8b']
             },
             'legacy_attacker': {
-                'type': 'openai',
-                'base_url': 'http://api.promptmaker.local:8181/v1',
-                'auth': {'type': 'api_key', 'header': 'Authorization', 'format': 'Bearer lm-studio'},
-                'models': ['TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf']
+                'type': 'ollama_local',
+                'base_url': 'http://api.promptmaker.local:11434/api/chat',
+                'auth': {'type': 'none'},
+                'models': ['huihui_ai/granite3.2-abliterated:8b']
             }
         },
         'targets': {
@@ -60,12 +60,12 @@ def _get_legacy_config():
         'attack': {
             'attacker_model': {
                 'provider': 'legacy_attacker',
-                'model': 'TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf',
-                'temperature': 10
+                'model': 'huihui_ai/granite3.2-abliterated:8b',
+                'temperature': 0.8
             },
             'analyzer_model': {
                 'provider': 'legacy_attacker',
-                'model': 'TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf',
+                'model': 'huihui_ai/granite3.2-abliterated:8b',
                 'temperature': 0.7
             }
         }
@@ -104,7 +104,7 @@ def get_attack_model_api_url():
         attack_config = get_attack_model_configuration(config, 'attacker_model')
         return attack_config['base_url']
     except:
-        return "http://api.promptmaker.local:8181/v1"
+        return "http://api.promptmaker.local:11434/api/chat"
 
 def get_attack_model_api_key():
     config = _load_config()
@@ -116,7 +116,7 @@ def get_attack_model_api_key():
             return auth_format.replace('Bearer ', '')
         return auth_format
     except:
-        return "lm-studio"
+        return None  # No auth required for local Ollama
 
 def get_attack_model_name():
     config = _load_config()
@@ -124,7 +124,7 @@ def get_attack_model_name():
         attack_config = get_attack_model_configuration(config, 'attacker_model')
         return attack_config['model']
     except:
-        return "TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf"
+        return "huihui_ai/granite3.2-abliterated:8b"
 
 def get_attack_model_temperature():
     config = _load_config()
@@ -132,7 +132,7 @@ def get_attack_model_temperature():
         attack_config = get_attack_model_configuration(config, 'attacker_model')
         return attack_config.get('temperature', 0.7)
     except:
-        return 10
+        return 0.8
 
 def get_analyzer_model_api_url():
     config = _load_config()
@@ -140,7 +140,7 @@ def get_analyzer_model_api_url():
         analyzer_config = get_attack_model_configuration(config, 'analyzer_model')
         return analyzer_config['base_url']
     except:
-        return "http://api.analyzer.local:8181/v1"
+        return "http://api.promptmaker.local:11434/api/chat"
 
 def get_analyzer_model_api_key():
     config = _load_config()
@@ -152,7 +152,7 @@ def get_analyzer_model_api_key():
             return auth_format.replace('Bearer ', '')
         return auth_format
     except:
-        return "lm-studio"
+        return None  # No auth required for local Ollama
 
 def get_analyzer_model_name():
     config = _load_config()
@@ -160,7 +160,7 @@ def get_analyzer_model_name():
         analyzer_config = get_attack_model_configuration(config, 'analyzer_model')
         return analyzer_config['model']
     except:
-        return "TheBloke/Wizard-Vicuna-13B-Uncensored-GGUF/Wizard-Vicuna-13B-Uncensored.Q8_0.gguf"
+        return "huihui_ai/granite3.2-abliterated:8b"
 
 # Legacy configuration variables as module-level constants for backwards compatibility
 TARGET_MODEL_API_URL = get_target_model_api_url()
