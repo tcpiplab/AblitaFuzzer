@@ -41,7 +41,10 @@ def test_call_ollama_attacker_model():
     try:
         # Build the full API URL for native Ollama API
         api_url = config.ATTACK_MODEL_API_URL
-        if not api_url.endswith('/api/chat'):
+        # If URL ends with /v1, replace with /api/chat for native API
+        if api_url.endswith('/v1'):
+            api_url = api_url.rstrip('/v1') + '/api/chat'
+        elif not api_url.endswith('/api/chat'):
             api_url = api_url.rstrip('/') + '/api/chat'
         
         # Send the POST request to Ollama

@@ -45,7 +45,7 @@ def _get_legacy_config():
             },
             'legacy_attacker': {
                 'type': 'ollama_local',
-                'base_url': 'http://api.promptmaker.local:11434',
+                'base_url': 'http://api.promptmaker.local:11434/v1',
                 'auth': {'type': 'none'},
                 'models': ['huihui_ai/granite3.2-abliterated:8b']
             }
@@ -104,7 +104,7 @@ def get_attack_model_api_url():
         attack_config = get_attack_model_configuration(config, 'attacker_model')
         return attack_config['base_url']
     except:
-        return "http://api.promptmaker.local:11434"
+        return "http://api.promptmaker.local:11434/v1"
 
 def get_attack_model_api_key():
     config = _load_config()
@@ -140,7 +140,7 @@ def get_analyzer_model_api_url():
         analyzer_config = get_attack_model_configuration(config, 'analyzer_model')
         return analyzer_config['base_url']
     except:
-        return "http://api.promptmaker.local:11434"
+        return "http://api.promptmaker.local:11434/v1"
 
 def get_analyzer_model_api_key():
     config = _load_config()
