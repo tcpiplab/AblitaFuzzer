@@ -39,13 +39,13 @@ def _get_legacy_config():
         'providers': {
             'legacy_target': {
                 'type': 'ollama_cloud',
-                'base_url': 'https://ollama.com/api/chat',
+                'base_url': 'https://ollama.com',
                 'auth': {'type': 'api_key', 'header': 'Authorization', 'format': 'Bearer {api_key}'},
                 'models': ['gpt-oss:20b']
             },
             'legacy_attacker': {
                 'type': 'ollama_local',
-                'base_url': 'http://api.promptmaker.local:11434/api/chat',
+                'base_url': 'http://api.promptmaker.local:11434',
                 'auth': {'type': 'none'},
                 'models': ['huihui_ai/granite3.2-abliterated:8b']
             }
@@ -88,7 +88,7 @@ def get_target_model_api_url():
         target_config = get_target_configuration(config, 'legacy_target')
         return target_config['base_url']
     except:
-        return "https://ollama.com/api/chat"
+        return "https://ollama.com"
 
 def get_target_model_name():
     config = _load_config()
@@ -104,7 +104,7 @@ def get_attack_model_api_url():
         attack_config = get_attack_model_configuration(config, 'attacker_model')
         return attack_config['base_url']
     except:
-        return "http://api.promptmaker.local:11434/api/chat"
+        return "http://api.promptmaker.local:11434"
 
 def get_attack_model_api_key():
     config = _load_config()
@@ -140,7 +140,7 @@ def get_analyzer_model_api_url():
         analyzer_config = get_attack_model_configuration(config, 'analyzer_model')
         return analyzer_config['base_url']
     except:
-        return "http://api.promptmaker.local:11434/api/chat"
+        return "http://api.promptmaker.local:11434"
 
 def get_analyzer_model_api_key():
     config = _load_config()

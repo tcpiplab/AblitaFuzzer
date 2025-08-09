@@ -39,8 +39,13 @@ def test_call_ollama_attacker_model():
     }
 
     try:
+        # Build the full API URL for native Ollama API
+        api_url = config.ATTACK_MODEL_API_URL
+        if not api_url.endswith('/api/chat'):
+            api_url = api_url.rstrip('/') + '/api/chat'
+        
         # Send the POST request to Ollama
-        response = requests.post(config.ATTACK_MODEL_API_URL, 
+        response = requests.post(api_url, 
                                headers=headers, 
                                data=json.dumps(payload),
                                timeout=30)
@@ -97,8 +102,19 @@ def test_call_target_model():
             print(f"{Fore.YELLOW}[!] This test may fail without proper authentication{Fore.RESET}")
 
     try:
+        # Build the full API URL (use v1 for cloud, api/chat for local)
+        api_url = config.TARGET_MODEL_API_URL
+        if config.TARGET_MODEL_API_URL.startswith("https://ollama.com"):
+            # Cloud service - use OpenAI-compatible endpoint
+            if not api_url.endswith('/v1/chat/completions'):
+                api_url = api_url.rstrip('/') + '/v1/chat/completions'
+        else:
+            # Local service - use native Ollama endpoint
+            if not api_url.endswith('/api/chat'):
+                api_url = api_url.rstrip('/') + '/api/chat'
+        
         # Send the POST request with timeout
-        response = requests.post(config.TARGET_MODEL_API_URL, 
+        response = requests.post(api_url, 
                                headers=headers, 
                                data=json.dumps(payload),
                                timeout=30)
