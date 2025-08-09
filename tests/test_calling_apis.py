@@ -51,7 +51,8 @@ def test_call_ollama_attacker_model():
         response = requests.post(api_url, 
                                headers=headers, 
                                data=json.dumps(payload),
-                               timeout=30)
+                               timeout=30,
+                               verify=False)  # Disable SSL verification for proxy testing
 
         if response.status_code == 200:
             response_data = response.json()
@@ -105,22 +106,15 @@ def test_call_target_model():
             print(f"{Fore.YELLOW}[!] This test may fail without proper authentication{Fore.RESET}")
 
     try:
-        # Build the full API URL (use v1 for cloud, api/chat for local)
+        # Use the API URL as configured - should already be correct
         api_url = config.TARGET_MODEL_API_URL
-        if config.TARGET_MODEL_API_URL.startswith("https://ollama.com"):
-            # Cloud service - use OpenAI-compatible endpoint
-            if not api_url.endswith('/v1/chat/completions'):
-                api_url = api_url.rstrip('/') + '/v1/chat/completions'
-        else:
-            # Local service - use native Ollama endpoint
-            if not api_url.endswith('/api/chat'):
-                api_url = api_url.rstrip('/') + '/api/chat'
         
         # Send the POST request with timeout
         response = requests.post(api_url, 
                                headers=headers, 
                                data=json.dumps(payload),
-                               timeout=30)
+                               timeout=30,
+                               verify=False)  # Disable SSL verification for proxy testing
 
         if response.status_code == 200:
             response_data = response.json()

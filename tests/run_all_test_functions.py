@@ -12,6 +12,9 @@ def run_all_test_functions(args):
         print(f'{Fore.GREEN}[+] Testing through proxy at http(s)://{args.proxy}')
         os.environ['http_proxy'] = args.proxy
         os.environ['https_proxy'] = args.proxy
+        # Disable SSL verification when using proxy (for Burp Suite, etc.)
+        os.environ['REQUESTS_CA_BUNDLE'] = ''
+        os.environ['CURL_CA_BUNDLE'] = ''
 
     print(f"{Fore.BLUE}[*] Starting Ollama API connectivity tests{Fore.RESET}")
     print(f"{Fore.BLUE}[*] Running tests sequentially to prevent kernel panics{Fore.RESET}\n")
