@@ -66,22 +66,45 @@ easier to understand the role and functionality of each API endpoint or hostname
 well as in the output of running the AblitaFuzzer tool. And of course they make it all less confusing when you are 
 testing everything on localhost in a lab environment.
 
-#### Set up the abliterated "attacker" LLM API
+#### Set up Ollama for Unified Architecture
 
-- Host an [abliterated](https://huggingface.co/collections/failspy/abliterated-v3-664a8ad0db255eefa7d0012b) or uncensored LLM at a localhost API URL. 
-- Either [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/) are great tools for this purpose, regardless of your OS.
-- Note that this API URL will also be used for analysis of the attack request/response pairs.
-- Edit the API call parameters in the following places:
-  - Set the API call parameters in `ablitafuzzer.call_abliterated_model_api()`
-  - Set the `base_url` in `ablitafuzzer.generate_malicious_prompts()`.
-  - Set them again in `tests.test_calling_apis.test_call_abliterated_model()` so they match the values used in the previous step.
+AblitaFuzzer now uses a unified Ollama architecture supporting both local and cloud deployments:
 
-#### Set up the target LLM API URL and payload
+**Local Ollama Setup (for attack generation):**
+- Install [Ollama](https://ollama.com/) on your system
+- Download an [abliterated](https://huggingface.co/collections/failspy/abliterated-v3-664a8ad0db255eefa7d0012b) model:
+  ```bash
+  ollama pull huihui_ai/granite3.2-abliterated:8b
+  ```
+- Start Ollama server (typically runs on `http://localhost:11434`)
 
-- Edit API call parameters in `ablitafuzzer.attack_target_model_api()`:
-  - Set the `TARGET_MODEL_API` global variable just above the function definition.
-  - Set the `payload` values inside the function definition.
-  - Set them again in `tests.test_calling_apis.test_call_target_model` so they match the values used in the previous step.
+**Target LLM Configuration:**
+- **Local Testing**: Use another Ollama model as a target for testing
+- **Cloud Testing**: Configure Ollama Cloud API credentials for production testing
+- **Remote APIs**: Point to your client's LLM API endpoint
+
+#### Configure API Settings
+
+AblitaFuzzer uses a centralized configuration system. The default configuration in `configs/config.py` includes:
+
+```python
+'legacy_target': {
+    'type': 'ollama',
+    'base_url': 'https://ollama.com/api/chat',  # Ollama Cloud
+    'auth': {'type': 'api_key', 'header': 'Authorization', 'format': 'Bearer ${OLLAMA_TURBO_API_KEY}'},
+    'models': ['gpt-oss:120b']
+},
+'legacy_attacker': {
+    'type': 'ollama', 
+    'base_url': 'http://api.promptmaker.local:11434/v1',  # Local Ollama
+    'auth': {'type': 'none'},
+    'models': ['huihui_ai/granite3.2-abliterated:8b']
+}
+```
+
+**Environment Variables:**
+- Set `OLLAMA_TURBO_API_KEY` for Ollama Cloud access
+- Configure proxy settings via `http_proxy` environment variable if needed
 
 #### Test calling both API URLs
 
@@ -184,14 +207,16 @@ sophisticated tool like [Garak](https://github.com/leondz/garak) or [PyRIT](http
 
 #### TLDR 
 
-1. `python3 ablitafuzzer.py test` - AblitaFuzzer tries to call the hardcoded API URLs of the (abliterated/uncensored) "attacker" LLM and the "target" LLM to make sure they are reachable and not returning errors.
+1. `python3 ablitafuzzer.py test` - AblitaFuzzer tests connectivity to configured Ollama endpoints (local abliterated model and target LLM) to ensure they are reachable and functioning properly.
 2. `python3 ablitafuzzer.py fuzz` 
-   1. AblitaFuzzer sends a bunch of known-malicious seed prompts to the abliterated model and asks it to generate new, novel malicious prompts.
-   2. AblitaFuzzer sends these new malicious prompts to the target LLM.
-   3. AblitaFuzzer records the responses from the target LLM in `results/results.json`.
+   1. AblitaFuzzer sends known-malicious seed prompts to the local abliterated Ollama model to generate new, novel attack prompts.
+   2. AblitaFuzzer sends these generated prompts to the target LLM (local, cloud, or remote API).
+   3. AblitaFuzzer records all responses in `results/results.json` with attack correlation IDs.
+   4. All traffic can be routed through proxy tools like Burp Suite for additional analysis.
 3. `python3 ablitafuzzer.py analyze`
-   1. AblitaFuzzer calls the abliterated LLM again, but this time to analyze the request/response pairs from the latest attack.
-   2. AblitaFuzzer writes the resulting analysis to a Markdown file.
+   1. AblitaFuzzer runs professional vulnerability analysis using the integrated analysis engine.
+   2. AblitaFuzzer generates comprehensive security reports in multiple formats (Markdown, HTML, JSON, CSV).
+   3. Reports include OWASP LLM Top 10 classification, risk scoring, and remediation recommendations.
 
 #### More detailed explanation of how it works
 
@@ -400,17 +425,26 @@ python3 ablitafuzzer.py analysis classify [options]
 ## Requirements
 --------------
 
-* Python 3.8 or later. Ablitafuzzer was developed and tested on Python 3.11.9.
-* OpenAI library. Note: The OpenAI library is not used for calling OpenAI's API. It is used for calling the 
-  OpenAI-compatible API that you will be hosting at localhost for the abliterated LLM. Use LM Studio for that. 
-* Requests library for calling the target model's API URL that you'll be attacking.
-* JSON library.
-* CSV library for inputting seed prompts that will be used as examples when asking the abliterated model to generate 
-  new attack prompts.
-* ...and everything in `requirements.txt`
-* Ollama (optional) - This is useful if you want to test using Ablitafuzzer to attack a "remote" target LLM's API 
-  URL before pointing AblitaFuzzer at your client's LLM API. In this scenario you'd be hosting the "target LLM" at 
-  localhost. 
+### Core Requirements
+* **Python 3.8 or later** - Ablitafuzzer was developed and tested on Python 3.11.9
+* **Ollama** - Required for unified architecture supporting both local and cloud LLM endpoints
+* **All packages in requirements.txt** - Install with `pip install -r requirements.txt`
+
+### Key Python Libraries
+* **Requests** - For HTTP API communication with target LLM endpoints
+* **OpenAI** - For OpenAI-compatible API format support (used with local Ollama, not OpenAI's API)
+* **Colorama** - For enhanced terminal output formatting
+* **Pandas/Matplotlib** - For professional analysis and reporting capabilities
+* **Transformers** - For advanced NLP analysis and toxicity detection
+
+### Ollama Setup
+* **Local Ollama Server** - For hosting abliterated models locally (attack generation)
+* **Ollama Turbo (Cloud) Account** - Optional, for production target testing with cloud models
+* **Abliterated Model** - Required for generating novel attack prompts (e.g., `huihui_ai/granite3.2-abliterated:8b`)
+
+### Optional Components
+* **Burp Suite/ZAP** - For proxy-based traffic analysis and evidence collection
+* **Target LLM Access** - API credentials or endpoint access for the system under assessment 
 
 ## License
 ---------
