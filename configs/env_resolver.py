@@ -2,29 +2,64 @@
 
 import re
 import os
+from .exceptions import EnvironmentVariableError, ConfigurationError
 
 
-def resolve_environment_variables(config_value):
+def _get_env_var_suggestion(var_name: str) -> str:
+    """Generate helpful suggestions for missing environment variables."""
+    suggestions = {
+        'ATTACK_MODEL_API_KEY': (
+            "For local models: export ATTACK_MODEL_API_KEY=dummy\n"
+            "For API services: export ATTACK_MODEL_API_KEY=your_actual_key"
+        ),
+        'TARGET_API_KEY': (
+            "Set your target API key: export TARGET_API_KEY=your_target_key"
+        ),
+        'OLLAMA_API_KEY': (
+            "Get your Ollama API key from https://ollama.com/settings/keys\n"
+            "Then: export OLLAMA_API_KEY=sk-your-key-here"
+        ),
+        'OLLAMA_TURBO_API_KEY': (
+            "Get your Ollama API key from https://ollama.com/settings/keys\n"
+            "Then: export OLLAMA_TURBO_API_KEY=sk-your-key-here"
+        )
+    }
+    
+    return suggestions.get(var_name, f"Set the variable: export {var_name}=your_value_here")
+
+
+def resolve_environment_variables(config_value: str) -> str:
     """
-    Resolve ${VAR_NAME} references in configuration values.
+    Resolve environment variables in configuration values with helpful errors.
     
     Args:
-        config_value (str): Configuration value that may contain env var references
+        config_value: String that may contain ${VAR_NAME} references
         
     Returns:
-        str: Resolved configuration value
+        String with environment variables resolved
+        
+    Raises:
+        EnvironmentVariableError: If required environment variables are missing
     """
     if not isinstance(config_value, str):
         return config_value
     
-    def replace_env_var(match):
+    def replace_env_var(match: re.Match) -> str:
         var_name = match.group(1)
-        env_value = os.getenv(var_name)
-        if env_value is None:
-            raise ValueError(f"Required environment variable '{var_name}' is not set")
-        return env_value
+        value = os.getenv(var_name)
+        
+        if value is None:
+            suggestion = _get_env_var_suggestion(var_name)
+            raise EnvironmentVariableError(var_name, suggestion)
+        
+        return value
     
-    return re.sub(r'\$\{([^}]+)\}', replace_env_var, config_value)
+    try:
+        return re.sub(r'\$\{([^}]+)\}', replace_env_var, config_value)
+    except EnvironmentVariableError:
+        raise
+    except Exception as e:
+        raise ConfigurationError(f"Failed to resolve environment variables: {e}")
 
 
 def resolve_environment_variables_recursive(config):
