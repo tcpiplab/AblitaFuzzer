@@ -21,6 +21,8 @@ def generate_auth_headers(auth_config):
         return generate_bearer_token_headers(auth_config)
     elif auth_type == 'custom':
         return generate_custom_headers(auth_config)
+    elif auth_type == 'none':
+        return {}  # No authentication headers needed
     else:
         raise ValueError(f"Unsupported authentication type: {auth_type}")
 
@@ -137,7 +139,7 @@ def get_supported_auth_types():
     Returns:
         list: List of supported authentication type strings
     """
-    return ['api_key', 'bearer', 'custom']
+    return ['api_key', 'bearer', 'custom', 'none']
 
 
 def validate_auth_config_schema(auth_config):

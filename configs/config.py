@@ -38,13 +38,13 @@ def _get_legacy_config():
         'version': '1.0-legacy',
         'providers': {
             'legacy_target': {
-                'type': 'ollama_cloud',
+                'type': 'ollama',
                 'base_url': 'https://ollama.com/api/chat',
-                'auth': {'type': 'api_key', 'header': 'Authorization', 'format': 'Bearer {api_key}'},
+                'auth': {'type': 'api_key', 'header': 'Authorization', 'format': 'Bearer ${OLLAMA_TURBO_API_KEY}'},
                 'models': ['gpt-oss:120b']
             },
             'legacy_attacker': {
-                'type': 'ollama_local',
+                'type': 'ollama',
                 'base_url': 'http://api.promptmaker.local:11434/v1',
                 'auth': {'type': 'none'},
                 'models': ['huihui_ai/granite3.2-abliterated:8b']

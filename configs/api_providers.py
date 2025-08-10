@@ -58,7 +58,7 @@ def format_azure_openai_request(prompt, model_params):
 
 def format_ollama_request(prompt, model_params):
     """
-    Format request payload for Ollama API.
+    Format request payload for Ollama Chat API (compatible with both local and cloud).
     
     Args:
         prompt (str): User prompt to send
@@ -69,7 +69,7 @@ def format_ollama_request(prompt, model_params):
     """
     return {
         "model": model_params["model"],
-        "prompt": prompt,
+        "messages": [{"role": "user", "content": prompt}],
         "stream": False,
         "options": {
             "temperature": model_params.get("temperature", 0.7),
@@ -164,7 +164,7 @@ def parse_anthropic_response(response_data):
 
 def parse_ollama_response(response_data):
     """
-    Parse response from Ollama API.
+    Parse response from Ollama Chat API.
     
     Args:
         response_data (dict): Raw API response
@@ -173,9 +173,14 @@ def parse_ollama_response(response_data):
         str: Extracted response content
     """
     try:
-        return response_data['response']
-    except KeyError as e:
-        raise ValueError(f"Invalid Ollama response format: {e}")
+        # Try Ollama chat format first (local and cloud)
+        return response_data['message']['content']
+    except KeyError:
+        try:
+            # Fallback to legacy generate format
+            return response_data['response']
+        except KeyError as e:
+            raise ValueError(f"Invalid Ollama response format: {e}")
 
 
 def parse_custom_response(response_data, parser_template=None):
