@@ -150,7 +150,11 @@ def create_attack_function(target_config: Dict) -> Callable[[str], Dict]:
     provider_type = target_config.get('type', 'openai')
     base_url = target_config['base_url']
     auth_config = target_config.get('auth', {})
-    model_params = target_config.get('model_params', {})
+    
+    # Construct model parameters with proper model field
+    model_params = target_config.get('model_params', {}).copy()
+    if 'model' not in model_params and 'model' in target_config:
+        model_params['model'] = target_config['model']
     
     # Get provider-specific formatters
     request_formatter = get_request_formatter(provider_type)
@@ -184,13 +188,50 @@ def create_attack_function(target_config: Dict) -> Callable[[str], Dict]:
             }
             headers.update(auth_headers)
             
-            # Make request
+            # Make request with proxy support
             import requests
+            import os
+            
+            # Configure hardcoded proxy for Burp Suite integration
+            proxies = None
+            verify_ssl = True
+            
+            # Check if proxy should be used via environment variables or CLI args
+            # Priority: CLI args > environment variables
+            proxy_host = None
+            proxy_port = None
+            
+            # Check for http_proxy environment variable
+            http_proxy_env = os.getenv('http_proxy') or os.getenv('https_proxy')
+            if http_proxy_env:
+                # Parse proxy URL (e.g., "http://127.0.0.1:8080")
+                if '://' in http_proxy_env:
+                    proxy_url = http_proxy_env.split('://', 1)[1]
+                else:
+                    proxy_url = http_proxy_env
+                    
+                if ':' in proxy_url:
+                    proxy_host, proxy_port = proxy_url.split(':', 1)
+                else:
+                    proxy_host = proxy_url
+                    proxy_port = '8080'  # Default Burp port
+            
+            # If proxy is configured, set it up properly for requests library
+            if proxy_host and proxy_port:
+                proxy_url = f"http://{proxy_host}:{proxy_port}"
+                proxies = {
+                    'http': proxy_url,
+                    'https': proxy_url
+                }
+                verify_ssl = False  # Disable SSL verification for Burp Suite
+            
             response = requests.post(
                 base_url,
                 headers=headers,
                 json=request_payload,
-                timeout=30
+                timeout=30,
+                proxies=proxies,
+                verify=verify_ssl
             )
             
             # Check for HTTP errors
@@ -240,6 +281,10 @@ def normalize_attack_response(
                 normalized['response_text'] = choice['message'].get('content', '')
             elif 'text' in choice:
                 normalized['response_text'] = choice['text']
+        
+        elif 'message' in raw_response and isinstance(raw_response['message'], dict):
+            # Ollama-style response
+            normalized['response_text'] = raw_response['message'].get('content', '')
         
         elif 'content' in raw_response:
             # Anthropic-style response
