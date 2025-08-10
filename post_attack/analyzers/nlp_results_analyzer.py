@@ -166,37 +166,48 @@ def save_classification_results(use_professional: bool = True):
     # Extract and classify responses
     classified_results = []
     for result in results:
-        if 'response' in result and 'message' in result['response']:
-            content = result['response']['message']['content']
-            prompt = result.get('prompt', '')
-            
-            # Use enhanced classification
-            classification = classify_response(content, prompt, use_professional)
-            
-            # Add professional analysis if enabled
-            analysis_data = {
-                "prompt": prompt,
-                "response": content,
-                "classification": classification,
-                "attack_id": result['attack_id']
-            }
-            
-            # Add professional analysis details if available
-            if use_professional and prompt:
-                try:
-                    professional_result = classify_response_professional(prompt, content)
-                    analysis_data.update({
-                        "vulnerability_type": professional_result.get('vulnerability_type', 'Unknown'),
-                        "owasp_llm_id": professional_result.get('owasp_llm_id', 'Unknown'),
-                        "severity": professional_result.get('severity', 'Unknown'),
-                        "confidence_score": professional_result.get('confidence_score', 0),
-                        "bypass_success": professional_result.get('bypass_success', False),
-                        "harmful_content_detected": professional_result.get('harmful_content_detected', False)
-                    })
-                except Exception as e:
-                    print(f"{Fore.YELLOW}[*] Professional analysis failed for {result['attack_id']}: {e}")
-            
-            classified_results.append(analysis_data)
+        # Handle different response structures
+        content = ""
+        if 'response' in result:
+            if isinstance(result['response'], dict) and 'message' in result['response']:
+                # New structure: response.message.content
+                content = result['response']['message']['content']
+            elif isinstance(result['response'], str):
+                # Simple structure: response is just a string
+                content = result['response']
+            else:
+                # Unknown structure, try to extract content
+                content = str(result['response'])
+        
+        prompt = result.get('prompt', '')
+        
+        # Use enhanced classification
+        classification = classify_response(content, prompt, use_professional)
+        
+        # Add professional analysis if enabled
+        analysis_data = {
+            "prompt": prompt,
+            "response": content,
+            "classification": classification,
+            "attack_id": result['attack_id']
+        }
+        
+        # Add professional analysis details if available
+        if use_professional and prompt:
+            try:
+                professional_result = classify_response_professional(prompt, content)
+                analysis_data.update({
+                    "vulnerability_type": professional_result.get('vulnerability_type', 'Unknown'),
+                    "owasp_llm_id": professional_result.get('owasp_llm_id', 'Unknown'),
+                    "severity": professional_result.get('severity', 'Unknown'),
+                    "confidence_score": professional_result.get('confidence_score', 0),
+                    "bypass_success": professional_result.get('bypass_success', False),
+                    "harmful_content_detected": professional_result.get('harmful_content_detected', False)
+                })
+            except Exception as e:
+                print(f"{Fore.YELLOW}[*] Professional analysis failed for {result['attack_id']}: {e}")
+        
+        classified_results.append(analysis_data)
 
     # Save the classified results to a new JSON file
     with open(config.TEMP_CLASSIFIED_RESULTS_FILE_PATH, 'w') as outfile:
@@ -247,8 +258,18 @@ def analyze_toxicity_legacy():
     with open('results.json', 'r') as file:
         data = json.load(file)
 
-    # Extract the relevant text content
-    texts = [entry['response']['message']['content'] for entry in data]
+    # Extract the relevant text content with flexible structure handling
+    texts = []
+    for entry in data:
+        if 'response' in entry:
+            if isinstance(entry['response'], dict) and 'message' in entry['response']:
+                texts.append(entry['response']['message']['content'])
+            elif isinstance(entry['response'], str):
+                texts.append(entry['response'])
+            else:
+                texts.append(str(entry['response']))
+        else:
+            texts.append('')
 
     # Analyze each text for harmful content
     results = []
@@ -301,8 +322,18 @@ def analyze_hate_speech():
     with open(config.TEMP_RESULTS_FILE_PATH, 'r') as file:
         data = json.load(file)
 
-    # Extract the relevant text content
-    texts = [entry['response']['message']['content'] for entry in data]
+    # Extract the relevant text content with flexible structure handling
+    texts = []
+    for entry in data:
+        if 'response' in entry:
+            if isinstance(entry['response'], dict) and 'message' in entry['response']:
+                texts.append(entry['response']['message']['content'])
+            elif isinstance(entry['response'], str):
+                texts.append(entry['response'])
+            else:
+                texts.append(str(entry['response']))
+        else:
+            texts.append('')
 
     # Analyze each text for harmful content
     results = []
