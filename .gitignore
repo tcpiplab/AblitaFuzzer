@@ -41,3 +41,4 @@ __pycache__/
 /reports/Vulnerabilities_2025-08-04-18-50.csv
 /reports/Vulnerabilities_2025-08-04-18-59.csv
 /reports/
+/fuzz_output.txt
