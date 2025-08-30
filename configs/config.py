@@ -114,16 +114,16 @@ def _cached_attack_key():
     return _cached_attack_key.value
 
 
-# Simple module-level constants that call functions - no classes needed
-TARGET_MODEL_API_URL = None  # Will be set lazily
-ATTACK_MODEL_API_KEY = None  # Will be set lazily
-TARGET_MODEL_NAME = None
-ATTACK_MODEL_API_URL = None
-ATTACK_MODEL_NAME = None  
-ATTACK_MODEL_TEMPERATURE = None
-ANALYZER_MODEL_API_URL = None
-ANALYZER_MODEL_API_KEY = None
-ANALYZER_MODEL_NAME = None
+# Initialize module-level constants immediately at import time
+TARGET_MODEL_API_URL = _get_target_url()
+TARGET_MODEL_NAME = _get_target_name()
+ATTACK_MODEL_API_URL = _get_attack_url()
+ATTACK_MODEL_API_KEY = get_attack_model_api_key()
+ATTACK_MODEL_NAME = _get_attack_name()
+ATTACK_MODEL_TEMPERATURE = _get_attack_temp()
+ANALYZER_MODEL_API_URL = _get_analyzer_url()
+ANALYZER_MODEL_API_KEY = _get_analyzer_key()
+ANALYZER_MODEL_NAME = _get_analyzer_name()
 
 
 def _initialize_legacy_constants():
@@ -133,20 +133,16 @@ def _initialize_legacy_constants():
     global ANALYZER_MODEL_API_URL, ANALYZER_MODEL_API_KEY, ANALYZER_MODEL_NAME
     
     if TARGET_MODEL_API_URL is None:
-        try:
-            TARGET_MODEL_API_URL = get_target_model_api_url()
-            TARGET_MODEL_NAME = get_target_model_name()
-            ATTACK_MODEL_API_URL = _get_attack_url()
-            ATTACK_MODEL_API_KEY = get_attack_model_api_key()
-            ATTACK_MODEL_NAME = get_attack_model_name()
-            ATTACK_MODEL_TEMPERATURE = get_attack_model_temperature()
-            ANALYZER_MODEL_API_URL = get_analyzer_model_api_url()
-            ANALYZER_MODEL_API_KEY = get_analyzer_model_api_key()
-            ANALYZER_MODEL_NAME = get_analyzer_model_name()
-        except Exception as e:
-            # Print warning but continue with None values
-            print(f"Warning: Configuration initialization failed: {e}", file=sys.stderr)
-            print("Some functionality may be limited until configuration is fixed", file=sys.stderr)
+        # These functions already handle fallback internally, no need to catch exceptions
+        TARGET_MODEL_API_URL = get_target_model_api_url()
+        TARGET_MODEL_NAME = get_target_model_name()
+        ATTACK_MODEL_API_URL = _get_attack_url()
+        ATTACK_MODEL_API_KEY = get_attack_model_api_key()
+        ATTACK_MODEL_NAME = get_attack_model_name()
+        ATTACK_MODEL_TEMPERATURE = get_attack_model_temperature()
+        ANALYZER_MODEL_API_URL = get_analyzer_model_api_url()
+        ANALYZER_MODEL_API_KEY = get_analyzer_model_api_key()
+        ANALYZER_MODEL_NAME = get_analyzer_model_name()
 
 
 # Simple function to get constants with lazy initialization
