@@ -22,6 +22,7 @@ from configs.config import get_config
 from configs.config_loader import get_target_configuration, get_attack_model_configuration
 from configs.api_providers import get_request_formatter, get_response_parser
 from configs.auth_manager import generate_auth_headers
+from utilities.proxy_manager import post as proxy_post
 
 
 def coordinate_attack_campaign(
@@ -188,50 +189,26 @@ def create_attack_function(target_config: Dict) -> Callable[[str], Dict]:
             }
             headers.update(auth_headers)
             
-            # Make request with proxy support
-            import requests
+            # Make request with selective proxy support
             import os
             
-            # Configure hardcoded proxy for Burp Suite integration
-            proxies = None
-            verify_ssl = True
-            
-            # Check if proxy should be used via environment variables or CLI args
-            # Priority: CLI args > environment variables
-            proxy_host = None
-            proxy_port = None
-            
-            # Check for http_proxy environment variable
+            # Get proxy setting from environment variables
+            proxy_setting = None
             http_proxy_env = os.getenv('http_proxy') or os.getenv('https_proxy')
             if http_proxy_env:
                 # Parse proxy URL (e.g., "http://127.0.0.1:8080")
                 if '://' in http_proxy_env:
-                    proxy_url = http_proxy_env.split('://', 1)[1]
+                    proxy_setting = http_proxy_env.split('://', 1)[1]
                 else:
-                    proxy_url = http_proxy_env
-                    
-                if ':' in proxy_url:
-                    proxy_host, proxy_port = proxy_url.split(':', 1)
-                else:
-                    proxy_host = proxy_url
-                    proxy_port = '8080'  # Default Burp port
+                    proxy_setting = http_proxy_env
             
-            # If proxy is configured, set it up properly for requests library
-            if proxy_host and proxy_port:
-                proxy_url = f"http://{proxy_host}:{proxy_port}"
-                proxies = {
-                    'http': proxy_url,
-                    'https': proxy_url
-                }
-                verify_ssl = False  # Disable SSL verification for Burp Suite
-            
-            response = requests.post(
+            # Use proxy manager for selective routing
+            response = proxy_post(
                 base_url,
+                proxy_setting=proxy_setting,
                 headers=headers,
                 json=request_payload,
-                timeout=30,
-                proxies=proxies,
-                verify=verify_ssl
+                timeout=30
             )
             
             # Check for HTTP errors
