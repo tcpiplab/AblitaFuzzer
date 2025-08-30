@@ -1,177 +1,171 @@
 #!/usr/bin/env python3
 
+"""
+Backwards compatible configuration interface using simple lazy loading functions.
+Provides the same API as before but with lazy loading and better error handling.
+"""
+
+import sys
 import os
-import warnings
-from .config_loader import load_configuration, get_target_configuration, get_attack_model_configuration
-from .migration import get_migration_status
+from typing import Optional
 
-# Global configuration cache
-_config_cache = None
-_environment = None
+from .config_resolver import (
+    get_target_model_api_url as _get_target_url,
+    get_target_model_name as _get_target_name,
+    get_attack_model_api_url as _get_attack_url,
+    get_attack_model_api_key as _get_attack_key,
+    get_attack_model_name as _get_attack_name,
+    get_attack_model_temperature as _get_attack_temp,
+    get_analyzer_model_api_url as _get_analyzer_url,
+    get_analyzer_model_api_key as _get_analyzer_key,
+    get_analyzer_model_name as _get_analyzer_name
+)
+from .exceptions import ConfigurationError
 
-def _load_config():
-    """Load configuration with caching."""
-    global _config_cache, _environment
-    
-    if _config_cache is None:
-        try:
-            _environment = os.getenv('ABLITAFUZZER_ENV', 'development')
-            _config_cache = load_configuration(environment=_environment)
-        except (FileNotFoundError, ValueError):
-            # Fall back to legacy configuration if new config not available
-            migration_status = get_migration_status()
-            if migration_status['status'] in ['needed', 'no_config']:
-                warnings.warn(
-                    "New configuration system not found. Using legacy hardcoded values. "
-                    "Run 'ablitafuzzer config migrate' to upgrade to the new system.",
-                    DeprecationWarning
-                )
-                _config_cache = _get_legacy_config()
-            else:
-                raise
-    
-    return _config_cache
+# Import legacy functions for backwards compatibility
+try:
+    from .config_loader import load_configuration, get_target_configuration, get_attack_model_configuration
+    from .migration import get_migration_status
+except ImportError as e:
+    print(f"Warning: Could not import configuration modules: {e}", file=sys.stderr)
 
-def _get_legacy_config():
-    """Provide legacy hardcoded configuration as fallback."""
-    return {
-        'version': '1.0-legacy',
-        'providers': {
-            'legacy_target': {
-                'type': 'ollama',
-                'base_url': 'https://ollama.com/api/chat',
-                'auth': {'type': 'api_key', 'header': 'Authorization', 'format': 'Bearer ${OLLAMA_TURBO_API_KEY}'},
-                'models': ['gpt-oss:120b']
-            },
-            'legacy_attacker': {
-                'type': 'ollama',
-                'base_url': 'http://api.promptmaker.local:11434/v1',
-                'auth': {'type': 'none'},
-                'models': ['huihui_ai/granite3.2-abliterated:8b']
-            }
-        },
-        'targets': {
-            'legacy_target': {
-                'provider': 'legacy_target',
-                'model': 'gpt-oss:120b',
-                'description': 'Legacy target configuration'
-            }
-        },
-        'attack': {
-            'attacker_model': {
-                'provider': 'legacy_attacker',
-                'model': 'huihui_ai/granite3.2-abliterated:8b',
-                'temperature': 0.8
-            },
-            'analyzer_model': {
-                'provider': 'legacy_attacker',
-                'model': 'huihui_ai/granite3.2-abliterated:8b',
-                'temperature': 0.7
-            }
-        }
-    }
 
 def get_config():
     """Get the current configuration."""
-    return _load_config()
+    try:
+        from .config_resolver import get_current_config
+        return get_current_config()
+    except Exception as e:
+        print(f"Warning: Configuration loading failed: {e}", file=sys.stderr)
+        return None
+
 
 def reload_config():
     """Reload configuration from disk."""
-    global _config_cache
-    _config_cache = None
-    return _load_config()
-
-# Legacy configuration variables for backwards compatibility
-def get_target_model_api_url():
-    config = _load_config()
     try:
-        target_config = get_target_configuration(config, 'legacy_target')
-        return target_config['base_url']
-    except:
-        return "https://ollama.com/api/chat"
+        from .config_resolver import get_current_config
+        # Clear the cache to force reload
+        get_current_config.cache_clear()
+        return get_current_config()
+    except Exception as e:
+        print(f"Warning: Configuration reload failed: {e}", file=sys.stderr)
+        return None
 
-def get_target_model_name():
-    config = _load_config()
-    try:
-        target_config = get_target_configuration(config, 'legacy_target')
-        return target_config['model']
-    except:
-        return "gpt-oss:120b"
 
-def get_attack_model_api_url():
-    config = _load_config()
-    try:
-        attack_config = get_attack_model_configuration(config, 'attacker_model')
-        return attack_config['base_url']
-    except:
-        return "http://api.promptmaker.local:11434/v1"
+# Simple lazy loading functions for backwards compatibility
+def get_target_model_api_url() -> str:
+    """Get target model API URL - lazy loaded."""
+    return _get_target_url()
 
-def get_attack_model_api_key():
-    config = _load_config()
-    try:
-        attack_config = get_attack_model_configuration(config, 'attacker_model')
-        # Extract key from auth format
-        auth_format = attack_config['auth']['format']
-        if 'Bearer ' in auth_format:
-            return auth_format.replace('Bearer ', '')
-        return auth_format
-    except:
-        return None  # No auth required for local Ollama
 
-def get_attack_model_name():
-    config = _load_config()
-    try:
-        attack_config = get_attack_model_configuration(config, 'attacker_model')
-        return attack_config['model']
-    except:
-        return "huihui_ai/granite3.2-abliterated:8b"
+def get_target_model_name() -> str:
+    """Get target model name - lazy loaded."""
+    return _get_target_name()
 
-def get_attack_model_temperature():
-    config = _load_config()
-    try:
-        attack_config = get_attack_model_configuration(config, 'attacker_model')
-        return attack_config.get('temperature', 0.7)
-    except:
-        return 0.8
 
-def get_analyzer_model_api_url():
-    config = _load_config()
-    try:
-        analyzer_config = get_attack_model_configuration(config, 'analyzer_model')
-        return analyzer_config['base_url']
-    except:
-        return "http://api.promptmaker.local:11434/v1"
+def get_attack_model_api_url() -> str:
+    """Get attack model API URL - lazy loaded."""
+    return _get_attack_url()
 
-def get_analyzer_model_api_key():
-    config = _load_config()
-    try:
-        analyzer_config = get_attack_model_configuration(config, 'analyzer_model')
-        # Extract key from auth format
-        auth_format = analyzer_config['auth']['format']
-        if 'Bearer ' in auth_format:
-            return auth_format.replace('Bearer ', '')
-        return auth_format
-    except:
-        return None  # No auth required for local Ollama
 
-def get_analyzer_model_name():
-    config = _load_config()
-    try:
-        analyzer_config = get_attack_model_configuration(config, 'analyzer_model')
-        return analyzer_config['model']
-    except:
-        return "huihui_ai/granite3.2-abliterated:8b"
+def get_attack_model_api_key() -> str:
+    """Get attack model API key - lazy loaded with fallback."""
+    key = _get_attack_key()
+    return key if key is not None else "dummy"
 
-# Legacy configuration variables as module-level constants for backwards compatibility
-TARGET_MODEL_API_URL = get_target_model_api_url()
-TARGET_MODEL_NAME = get_target_model_name()
-ATTACK_MODEL_API_URL = get_attack_model_api_url()
+
+def get_attack_model_name() -> str:
+    """Get attack model name - lazy loaded."""
+    return _get_attack_name()
+
+
+def get_attack_model_temperature() -> float:
+    """Get attack model temperature - lazy loaded."""
+    return _get_attack_temp()
+
+
+def get_analyzer_model_api_url() -> str:
+    """Get analyzer model API URL - lazy loaded."""
+    return _get_analyzer_url()
+
+
+def get_analyzer_model_api_key() -> Optional[str]:
+    """Get analyzer model API key - lazy loaded."""
+    return _get_analyzer_key()
+
+
+def get_analyzer_model_name() -> str:
+    """Get analyzer model name - lazy loaded."""
+    return _get_analyzer_name()
+
+
+# Legacy module-level "constants" - implemented as function calls with caching
+def _cached_target_url():
+    """Cache target URL to avoid repeated resolution."""
+    if not hasattr(_cached_target_url, 'value'):
+        _cached_target_url.value = get_target_model_api_url()
+    return _cached_target_url.value
+
+
+def _cached_attack_key():
+    """Cache attack key to avoid repeated resolution."""
+    if not hasattr(_cached_attack_key, 'value'):
+        _cached_attack_key.value = get_attack_model_api_key()
+    return _cached_attack_key.value
+
+
+# Initialize module-level constants immediately at import time
+TARGET_MODEL_API_URL = _get_target_url()
+TARGET_MODEL_NAME = _get_target_name()
+ATTACK_MODEL_API_URL = _get_attack_url()
 ATTACK_MODEL_API_KEY = get_attack_model_api_key()
-ATTACK_MODEL_NAME = get_attack_model_name()
-ATTACK_MODEL_TEMPERATURE = get_attack_model_temperature()
-ANALYZER_MODEL_API_URL = get_analyzer_model_api_url()
-ANALYZER_MODEL_API_KEY = get_analyzer_model_api_key()
-ANALYZER_MODEL_NAME = get_analyzer_model_name()
+ATTACK_MODEL_NAME = _get_attack_name()
+ATTACK_MODEL_TEMPERATURE = _get_attack_temp()
+ANALYZER_MODEL_API_URL = _get_analyzer_url()
+ANALYZER_MODEL_API_KEY = _get_analyzer_key()
+ANALYZER_MODEL_NAME = _get_analyzer_name()
+
+
+def _initialize_legacy_constants():
+    """Initialize legacy constants on first access."""
+    global TARGET_MODEL_API_URL, ATTACK_MODEL_API_KEY, TARGET_MODEL_NAME
+    global ATTACK_MODEL_API_URL, ATTACK_MODEL_NAME, ATTACK_MODEL_TEMPERATURE
+    global ANALYZER_MODEL_API_URL, ANALYZER_MODEL_API_KEY, ANALYZER_MODEL_NAME
+    
+    if TARGET_MODEL_API_URL is None:
+        # These functions already handle fallback internally, no need to catch exceptions
+        TARGET_MODEL_API_URL = get_target_model_api_url()
+        TARGET_MODEL_NAME = get_target_model_name()
+        ATTACK_MODEL_API_URL = _get_attack_url()
+        ATTACK_MODEL_API_KEY = get_attack_model_api_key()
+        ATTACK_MODEL_NAME = get_attack_model_name()
+        ATTACK_MODEL_TEMPERATURE = get_attack_model_temperature()
+        ANALYZER_MODEL_API_URL = get_analyzer_model_api_url()
+        ANALYZER_MODEL_API_KEY = get_analyzer_model_api_key()
+        ANALYZER_MODEL_NAME = get_analyzer_model_name()
+
+
+# Simple function to get constants with lazy initialization
+def get_legacy_constant(name: str):
+    """Get legacy constant value with lazy initialization."""
+    _initialize_legacy_constants()
+    return globals().get(name)
+
+
+# Override module __getattr__ to provide lazy loading for backwards compatibility
+def __getattr__(name: str):
+    """Provide lazy loading for legacy constants."""
+    legacy_constants = {
+        'TARGET_MODEL_API_URL', 'TARGET_MODEL_NAME', 'ATTACK_MODEL_API_URL',
+        'ATTACK_MODEL_API_KEY', 'ATTACK_MODEL_NAME', 'ATTACK_MODEL_TEMPERATURE',
+        'ANALYZER_MODEL_API_URL', 'ANALYZER_MODEL_API_KEY', 'ANALYZER_MODEL_NAME'
+    }
+    
+    if name in legacy_constants:
+        return get_legacy_constant(name)
+    
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
 
 # Attack Engine Configuration
 ATTACK_ENGINE_CONFIG = {
