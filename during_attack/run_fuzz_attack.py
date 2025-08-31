@@ -65,6 +65,14 @@ def run_fuzz_attack(args) -> None:
         print(f"{Fore.GREEN}[+] Target: {target_name}")
         print(f"{Fore.GREEN}[+] Prompts: {len(prompts)}")
         
+        # Set proxy environment variable if specified
+        import os
+        proxy_setting = getattr(args, 'proxy', None)
+        if proxy_setting:
+            os.environ['http_proxy'] = f"http://{proxy_setting}"
+            os.environ['https_proxy'] = f"http://{proxy_setting}"
+            print(f"{Fore.GREEN}[+] Using proxy: {proxy_setting}")
+        
         # Execute attack campaign
         campaign_result = coordinate_attack_campaign(
             prompts=prompts,
