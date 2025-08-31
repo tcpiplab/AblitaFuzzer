@@ -1,15 +1,23 @@
 import json
 import time
 import requests
+import logging
 from configs import config as config
 from colorama import Fore, init
+from utilities.proxy_manager import post
 
 # Move this statement to main() and test that colors still work
 # Initialize colorama and set autoreset to True
 init(autoreset=True)
 
+# Configure logging to see Ollama API request/response details
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
-def test_call_ollama_attacker_model():
+
+def test_call_ollama_attacker_model(proxy_setting=None):
     """Test calling the local Ollama attacker model using native Ollama API format."""
     
     print(f'{Fore.GREEN}[+] Testing calling the Ollama attacker model at {config.ATTACK_MODEL_API_URL}{Fore.RESET}')
@@ -47,12 +55,12 @@ def test_call_ollama_attacker_model():
         elif not api_url.endswith('/api/chat'):
             api_url = api_url.rstrip('/') + '/api/chat'
         
-        # Send the POST request to Ollama
-        response = requests.post(api_url, 
-                               headers=headers, 
-                               data=json.dumps(payload),
-                               timeout=30,
-                               verify=False)  # Disable SSL verification for proxy testing
+        # Send the POST request to Ollama using proxy manager
+        response = post(api_url, 
+                       proxy_setting=proxy_setting,
+                       headers=headers, 
+                       json=payload,
+                       timeout=30)
 
         if response.status_code == 200:
             response_data = response.json()
@@ -73,7 +81,7 @@ def test_call_ollama_attacker_model():
         print(f"{Fore.RED}[!] Unexpected error calling Ollama attacker model: {e}{Fore.RESET}")
 
 
-def test_call_target_model():
+def test_call_target_model(proxy_setting=None):
     """Test calling the target model using Ollama API format."""
     
     print(f'{Fore.GREEN}[+] Testing calling the target model at {config.TARGET_MODEL_API_URL}{Fore.RESET}')
@@ -109,12 +117,12 @@ def test_call_target_model():
         # Use the API URL as configured - should already be correct
         api_url = config.TARGET_MODEL_API_URL
         
-        # Send the POST request with timeout
-        response = requests.post(api_url, 
-                               headers=headers, 
-                               data=json.dumps(payload),
-                               timeout=30,
-                               verify=False)  # Disable SSL verification for proxy testing
+        # Send the POST request using proxy manager
+        response = post(api_url, 
+                       proxy_setting=proxy_setting,
+                       headers=headers, 
+                       json=payload,
+                       timeout=30)
 
         if response.status_code == 200:
             response_data = response.json()
