@@ -8,8 +8,13 @@ target traffic uses proxy when specified.
 """
 
 import requests
+import json
+import logging
 from urllib.parse import urlparse
 from typing import Optional, Dict, Any
+
+# Configure logger for Ollama API requests
+logger = logging.getLogger(__name__)
 
 
 def is_localhost_url(url: str) -> bool:
@@ -39,6 +44,48 @@ def is_localhost_url(url: str) -> bool:
         return hostname.lower() in localhost_hosts
     except Exception:
         return False
+
+
+def log_ollama_request(url: str, payload: Dict[str, Any]) -> None:
+    """
+    Log detailed Ollama API request information.
+    
+    Args:
+        url: The URL being requested
+        payload: The request payload/body
+    """
+    logger.info(f"=== OLLAMA REQUEST to {url} ===")
+    logger.info(f"Request Body: {json.dumps(payload, indent=2)}")
+
+
+def log_ollama_response(response: requests.Response) -> None:
+    """
+    Log detailed Ollama API response information.
+    
+    Args:
+        response: The response object from requests
+    """
+    logger.info(f"=== OLLAMA RESPONSE ===")
+    logger.info(f"Status Code: {response.status_code}")
+    try:
+        response_data = response.json()
+        logger.info(f"Response Body: {json.dumps(response_data, indent=2)}")
+    except (json.JSONDecodeError, ValueError):
+        logger.info(f"Response Body (raw): {response.text}")
+    logger.info("=" * 50)
+
+
+def should_log_ollama_request(url: str) -> bool:
+    """
+    Determine if this request should be logged with detailed Ollama logging.
+    
+    Args:
+        url: The URL being requested
+        
+    Returns:
+        True if this is a localhost Ollama API request that should be logged
+    """
+    return is_localhost_url(url) and '/api/chat' in url
 
 
 def get_proxy_config(url: str, proxy_setting: Optional[str] = None) -> Dict[str, Optional[str]]:
@@ -101,7 +148,7 @@ def make_request(method: str, url: str, proxy_setting: Optional[str] = None, **k
 
 def post(url: str, proxy_setting: Optional[str] = None, **kwargs) -> requests.Response:
     """
-    Make POST request with selective proxy routing.
+    Make POST request with selective proxy routing and optional Ollama logging.
     
     Args:
         url: Target URL
@@ -111,7 +158,29 @@ def post(url: str, proxy_setting: Optional[str] = None, **kwargs) -> requests.Re
     Returns:
         Response object
     """
-    return make_request('POST', url, proxy_setting, **kwargs)
+    # Log Ollama requests if applicable
+    if should_log_ollama_request(url):
+        # Extract payload for logging
+        payload = None
+        if 'json' in kwargs:
+            payload = kwargs['json']
+        elif 'data' in kwargs and isinstance(kwargs['data'], str):
+            try:
+                payload = json.loads(kwargs['data'])
+            except (json.JSONDecodeError, ValueError):
+                payload = {'data': kwargs['data']}
+        
+        if payload:
+            log_ollama_request(url, payload)
+    
+    # Make the request
+    response = make_request('POST', url, proxy_setting, **kwargs)
+    
+    # Log Ollama response if applicable
+    if should_log_ollama_request(url):
+        log_ollama_response(response)
+    
+    return response
 
 
 def get(url: str, proxy_setting: Optional[str] = None, **kwargs) -> requests.Response:

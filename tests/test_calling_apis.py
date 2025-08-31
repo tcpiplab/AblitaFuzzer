@@ -1,6 +1,7 @@
 import json
 import time
 import requests
+import logging
 from configs import config as config
 from colorama import Fore, init
 from utilities.proxy_manager import post
@@ -8,6 +9,12 @@ from utilities.proxy_manager import post
 # Move this statement to main() and test that colors still work
 # Initialize colorama and set autoreset to True
 init(autoreset=True)
+
+# Configure logging to see Ollama API request/response details
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 
 def test_call_ollama_attacker_model(proxy_setting=None):
@@ -52,7 +59,7 @@ def test_call_ollama_attacker_model(proxy_setting=None):
         response = post(api_url, 
                        proxy_setting=proxy_setting,
                        headers=headers, 
-                       data=json.dumps(payload),
+                       json=payload,
                        timeout=30)
 
         if response.status_code == 200:
@@ -114,7 +121,7 @@ def test_call_target_model(proxy_setting=None):
         response = post(api_url, 
                        proxy_setting=proxy_setting,
                        headers=headers, 
-                       data=json.dumps(payload),
+                       json=payload,
                        timeout=30)
 
         if response.status_code == 200:
