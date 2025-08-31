@@ -4,6 +4,7 @@ import os
 import yaml
 import jsonschema
 from pathlib import Path
+from urllib.parse import urlparse
 from .auth_manager import validate_auth_config_schema
 from .api_providers import validate_provider_config
 
@@ -301,8 +302,8 @@ def get_configuration_recommendations(config):
     # Check for proxy configuration in enterprise scenarios
     providers = config.get('providers', {})
     has_cloud_providers = any(
-        'api.openai.com' in provider.get('base_url', '') or
-        'api.anthropic.com' in provider.get('base_url', '')
+        urlparse(provider.get('base_url', '')).hostname == 'api.openai.com' or
+        urlparse(provider.get('base_url', '')).hostname == 'api.anthropic.com'
         for provider in providers.values()
     )
     
